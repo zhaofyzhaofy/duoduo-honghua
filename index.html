@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>朵朵红花</title>
+
+  <!-- ====== PWA 相关 meta 标签 ====== -->
+  <meta name="theme-color" content="#E85D5D">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="朵朵红花">
+  <link rel="manifest" id="manifestLink">
+  <!-- iOS 启动画面颜色 -->
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script>
+    tailwind.config = {
+      theme: { extend: { colors: {
+        cream:'#FEF7EC',bark:'#3D2C1E',petal:'#E85D5D',
+        petalLt:'#FFE4E4',gold:'#F5A623',mint:'#4ECDC4',sand:'#F5E6D3'
+      }}}
+    }
+  </script>
+  <style>
+    :root{--bg:#FEF7EC;--card:#FFFFFF;--primary:#E85D5D;--primary-light:#FFE4E4;--secondary:#F5A623;--accent:#4ECDC4;--text:#3D2C1E;--muted:#A89580;--border:#F5E6D3}
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'ZCOOL KuaiLe',cursive,system-ui;background:var(--bg);color:var(--text);min-height:100vh;min-height:100dvh;overflow-x:hidden;-webkit-tap-highlight-color:transparent}
+    .bg-blob{position:fixed;border-radius:50%;filter:blur(80px);opacity:.12;pointer-events:none;z-index:0}
+    .ring-progress{transition:stroke-dashoffset .8s cubic-bezier(.4,0,.2,1);transform:rotate(-90deg);transform-origin:50% 50%}
+    @keyframes pop{0%{transform:scale(0)}60%{transform:scale(1.3)}100%{transform:scale(1)}}
+    .dot-earned{animation:pop .4s ease-out}
+    .petal{position:fixed;pointer-events:none;z-index:1000;animation:pFall linear forwards}
+    @keyframes pFall{0%{opacity:1;transform:translateY(0) rotate(0) scale(1)}100%{opacity:0;transform:translateY(100vh) rotate(720deg) scale(.2)}}
+    .cft{position:fixed;pointer-events:none;z-index:1001;animation:cFall linear forwards}
+    @keyframes cFall{0%{opacity:1;transform:translateY(-10vh) rotate(0)}100%{opacity:0;transform:translateY(110vh) rotate(1080deg)}}
+    .modal-bg{transition:opacity .25s ease}.modal-bg.hide{opacity:0;pointer-events:none}
+    .modal-box{transition:transform .25s ease,opacity .25s ease}.modal-bg.hide .modal-box{transform:translateY(24px);opacity:0}
+    .btn-main{position:relative;overflow:hidden;transition:transform .15s}.btn-main:active{transform:scale(.96)}
+    .kid-card{transition:all .25s ease;cursor:pointer}.kid-card.on{transform:translateY(-3px);box-shadow:0 8px 24px rgba(232,93,93,.18)}
+    .qtag{transition:all .15s;cursor:pointer}.qtag:active{transform:scale(.94)}
+    .rec-item{transition:transform .2s}.rec-item:hover{transform:translateX(3px)}
+    .tbtn{transition:color .2s}.tbtn.on{color:var(--primary)}
+    .toast-in{animation:tIn .35s ease,tOut .35s ease 2.2s forwards}
+    @keyframes tIn{from{transform:translateY(-16px);opacity:0}to{transform:translateY(0);opacity:1}}
+    @keyframes tOut{from{opacity:1}to{opacity:0;transform:translateY(-10px)}}
+    .wish-card{transition:transform .2s}.wish-card:hover{transform:translateY(-2px)}
+    input:focus,textarea:focus{outline:none;border-color:var(--primary)!important;box-shadow:0 0 0 3px var(--primary-light)}
+    @keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+    @keyframes glow{0%,100%{box-shadow:0 0 0 0 rgba(232,93,93,.3)}50%{box-shadow:0 0 0 12px rgba(232,93,93,0)}}
+    ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+    /* PWA安装横幅 */
+    .install-bar{animation:slideU .4s ease}
+    @keyframes slideU{from{transform:translateY(100%)}to{transform:translateY(0)}}
+    @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+    /* 安全区域适配（刘海屏） */
+    body{padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
+  </style>
+</head>
+<body class="relative">
+  <div class="bg-blob" style="width:340px;height:340px;background:var(--primary);top:-120px;right:-80px"></div>
+  <div class="bg-blob" style="width:240px;height:240px;background:var(--secondary);bottom:60px;left:-100px"></div>
+  <div class="bg-blob" style="width:180px;height:180px;background:var(--accent);bottom:-60px;right:40px"></div>
+
+  <!-- Toast -->
+  <div id="toasts" class="fixed top-4 left-1/2 -translate-x-1/2 z-[1100] flex flex-col gap-2 pointer-events-none" style="margin-top:env(safe-area-inset-top)"></div>
+  <!-- 确认弹窗 -->
+  <div id="confirmWrap"></div>
+
+  <!-- 主应用 -->
+  <div id="app" class="relative z-10 max-w-lg mx-auto min-h-screen flex flex-col" style="min-height:100dvh;padding-bottom:calc(4.5rem + env(safe-area-inset-bottom))">
+    <header class="flex items-center justify-between px-5 pt-6 pb-2">
+      <h1 class="text-2xl tracking-wide" style="color:var(--primary)"><i class="fa-solid fa-seedling mr-1.5"></i>朵朵红花</h1>
+      <button onclick="openSettings()" class="w-10 h-10 rounded-full flex items-center justify-center hover:bg-white/50 transition-colors" aria-label="设置"><i class="fa-solid fa-sliders text-lg" style="color:var(--muted)"></i></button>
+    </header>
+    <div id="kidBar" class="flex gap-3 px-5 py-3"></div>
+    <main id="mainArea" class="flex-1 overflow-y-auto px-5 pb-4"></main>
+  </div>
+
+  <!-- 底部Tab -->
+  <nav class="fixed bottom-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-xl border-t" style="border-color:var(--border);padding-bottom:env(safe-area-inset-bottom)">
+    <div class="max-w-lg mx-auto flex">
+      <button class="tbtn on flex-1 flex flex-col items-center py-3 gap-0.5" data-t="garden" onclick="goTab('garden')"><i class="fa-solid fa-sun text-xl"></i><span class="text-[11px]">花园</span></button>
+      <button class="tbtn flex-1 flex flex-col items-center py-3 gap-0.5" data-t="records" onclick="goTab('records')"><i class="fa-solid fa-clock-rotate-left text-xl"></i><span class="text-[11px]">记录</span></button>
+      <button class="tbtn flex-1 flex flex-col items-center py-3 gap-0.5" data-t="wishes" onclick="goTab('wishes')"><i class="fa-solid fa-gift text-xl"></i><span class="text-[11px]">心愿</span></button>
+    </div>
+  </nav>
+
+  <!-- PWA 安装提示横幅 -->
+  <div id="installBar" class="install-bar fixed bottom-16 left-0 right-0 z-40 px-4 py-3 hidden" style="background:linear-gradient(135deg,var(--primary),#FF8A80);padding-bottom:calc(0.75rem + env(safe-area-inset-bottom))">
+    <div class="max-w-lg mx-auto flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl flex items-center justify-center bg-white/20 shrink-0">
+        <i class="fa-solid fa-download text-white text-lg"></i>
+      </div>
+      <div class="flex-1 min-w-0">
+        <p class="text-white text-sm font-bold">添加到主屏幕</p>
+        <p class="text-white/80 text-xs">像App一样全屏使用</p>
+      </div>
+      <button onclick="installPWA()" class="px-4 py-2 rounded-full bg-white text-sm font-bold shrink-0" style="color:var(--primary)">安装</button>
+      <button onclick="dismissInstall()" class="text-white/60 hover:text-white shrink-0"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+  </div>
+
+  <!-- 模态框：给小红花 -->
+  <div id="mGive" class="modal-bg hide fixed inset-0 z-[100] flex items-end justify-center bg-black/40" onclick="if(event.target===this)closeM('mGive')">
+    <div class="modal-box bg-white rounded-t-3xl w-full max-w-lg p-6 pb-10 max-h-[85vh] overflow-y-auto">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-xl" style="color:var(--primary)">给小红花</h2>
+        <button onclick="closeM('mGive')" class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-gray-100"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <p class="text-sm mb-2" style="color:var(--muted)">快速选择：</p>
+      <div id="qTags" class="flex flex-wrap gap-2 mb-4"></div>
+      <div id="addTagArea" class="mb-5 hidden">
+        <div class="flex gap-2">
+          <input id="newTagInput" type="text" maxlength="10" placeholder="输入新标签名" class="flex-1 px-3 py-2 rounded-lg border-2 text-sm" style="border-color:var(--border)" onkeydown="if(event.key==='Enter')doAddTag()">
+          <button onclick="doAddTag()" class="px-4 py-2 rounded-lg text-white text-sm" style="background:var(--primary)">添加</button>
+          <button onclick="hideAddTag()" class="px-3 py-2 rounded-lg text-sm border-2" style="border-color:var(--border);color:var(--muted)">取消</button>
+        </div>
+      </div>
+      <label class="text-sm block mb-1" style="color:var(--muted)">或自定义内容：</label>
+      <input id="giveInput" type="text" maxlength="50" placeholder="宝宝做了什么好事呀？" class="w-full px-4 py-3 rounded-xl border-2 text-base mb-5" style="border-color:var(--border)" onkeydown="if(event.key==='Enter')doGive()">
+      <button onclick="doGive()" class="btn-main w-full py-3.5 rounded-xl text-white text-lg" style="background:linear-gradient(135deg,var(--primary),#FF8A80)"><i class="fa-solid fa-heart mr-2"></i>确认给花</button>
+    </div>
+  </div>
+
+  <!-- 模态框：添加心愿 -->
+  <div id="mWish" class="modal-bg hide fixed inset-0 z-[100] flex items-end justify-center bg-black/40" onclick="if(event.target===this)closeM('mWish')">
+    <div class="modal-box bg-white rounded-t-3xl w-full max-w-lg p-6 pb-10">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-xl" style="color:var(--secondary)">添加心愿</h2>
+        <button onclick="closeM('mWish')" class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-gray-100"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <input id="wishInput" type="text" maxlength="30" placeholder="想要什么礼物呢？" class="w-full px-4 py-3 rounded-xl border-2 text-base mb-5" style="border-color:var(--border)" onkeydown="if(event.key==='Enter')doWish()">
+      <button onclick="doWish()" class="btn-main w-full py-3.5 rounded-xl text-white text-lg" style="background:linear-gradient(135deg,var(--secondary),#FFD180)"><i class="fa-solid fa-star mr-2"></i>添加到心愿单</button>
+    </div>
+  </div>
+
+  <!-- 模态框：兑换 -->
+  <div id="mRedeem" class="modal-bg hide fixed inset-0 z-[100] flex items-end justify-center bg-black/40" onclick="if(event.target===this)closeM('mRedeem')">
+    <div class="modal-box bg-white rounded-t-3xl w-full max-w-lg p-6 pb-10 max-h-[80vh] overflow-y-auto">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-xl" style="color:var(--accent)">兑换礼物</h2>
+        <button onclick="closeM('mRedeem')" class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-gray-100"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <p class="text-sm mb-2" style="color:var(--muted)">从心愿单选择，或自定义：</p>
+      <div id="redeemList" class="flex flex-col gap-2 mb-4"></div>
+      <input id="redeemInput" type="text" maxlength="30" placeholder="自定义礼物名称" class="w-full px-4 py-3 rounded-xl border-2 text-base mb-5" style="border-color:var(--border)" onkeydown="if(event.key==='Enter')doRedeem()">
+      <button onclick="doRedeem()" class="btn-main w-full py-3.5 rounded-xl text-white text-lg" style="background:linear-gradient(135deg,var(--accent),#80DEEA)"><i class="fa-solid fa-wand-magic-sparkles mr-2"></i>确认兑换</button>
+    </div>
+  </div>
+
+  <!-- 模态框：设置 -->
+  <div id="mSet" class="modal-bg hide fixed inset-0 z-[100] flex items-center-start bg-black/40 px-5 overflow-y-auto" onclick="if(event.target===this)closeM('mSet')">
+    <div class="modal-box bg-white rounded-2xl w-full max-w-md p-6 my-8">
+      <div class="flex items-center justify-between mb-5">
+        <h2 class="text-xl">设置</h2>
+        <button onclick="closeM('mSet')" class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-gray-100"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div id="setBody"></div>
+    </div>
+  </div>
+
+<script>
+// ==================== PWA 初始化 ====================
+
+// 动态生成应用图标（Canvas 绘制小花）
+function genAppIcon(size) {
+  const c = document.createElement('canvas');
+  c.width = c.height = size;
+  const ctx = c.getContext('2d');
+  // 圆角背景
+  const r = size * 0.18;
+  ctx.beginPath();
+  ctx.moveTo(r, 0); ctx.lineTo(size-r, 0); ctx.quadraticCurveTo(size,0,size,r);
+  ctx.lineTo(size, size-r); ctx.quadraticCurveTo(size,size,size-r,size);
+  ctx.lineTo(r, size); ctx.quadraticCurveTo(0,size,0,size-r);
+  ctx.lineTo(0, r); ctx.quadraticCurveTo(0,0,r,0);
+  ctx.closePath();
+  ctx.fillStyle = '#FEF7EC'; ctx.fill();
+  ctx.clip();
+  // 画5瓣花
+  const cx = size/2, cy = size*0.42;
+  const pR = size*0.16, pD = size*0.14;
+  ctx.fillStyle = '#E85D5D';
+  for (let i = 0; i < 5; i++) {
+    const a = (i*72 - 90)*Math.PI/180;
+    ctx.beginPath();
+    ctx.arc(cx+Math.cos(a)*pD, cy+Math.sin(a)*pD, pR, 0, Math.PI*2);
+    ctx.fill();
+  }
+  // 花心
+  ctx.fillStyle = '#FFD700';
+  ctx.beginPath(); ctx.arc(cx, cy, size*0.09, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#FFA000';
+  ctx.beginPath(); ctx.arc(cx, cy, size*0.05, 0, Math.PI*2); ctx.fill();
+  // 茎
+  ctx.strokeStyle = '#6BCB77'; ctx.lineWidth = size*0.025; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(cx, cy+pD); ctx.quadraticCurveTo(cx+size*0.06, size*0.7, cx-size*0.02, size*0.88); ctx.stroke();
+  // 叶子
+  ctx.fillStyle = '#6BCB77';
+  ctx.beginPath();
+  ctx.ellipse(cx+size*0.08, size*0.72, size*0.06, size*0.03, 0.5, 0, Math.PI*2);
+  ctx.fill();
+  return c.toDataURL('image/png');
+}
+
+// 动态生成 Web App Manifest
+function initManifest() {
+  const icon192 = genAppIcon(192);
+  const icon512 = genAppIcon(512);
+  const manifest = {
+    name: '朵朵红花 - 好孩子奖励',
+    short_name: '朵朵红花',
+    description: '给好孩子小红花的家庭奖励应用',
+    start_url: './',
+    display: 'standalone',
+    orientation: 'portrait',
+    background_color: '#FEF7EC',
+    theme_color: '#E85D5D',
+    icons: [
+      { src: icon192, sizes: '192x192', type: 'image/png' },
+      { src: icon512, sizes: '512x512', type: 'image/png' }
+    ]
+  };
+  const blob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+  document.getElementById('manifestLink').href = URL.createObjectURL(blob);
+  // iOS 图标
+  const link = document.createElement('link');
+  link.rel = 'apple-touch-icon';
+  link.href = icon192;
+  document.head.appendChild(link);
+}
+
+// 注册 Service Worker
+function initSW() {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js').then(reg => {
+      console.log('Service Worker 注册成功');
+      // 检查更新
+      reg.addEventListener('updatefound', () => {
+        const nw = reg.installing;
+        nw.addEventListener('statechange', () => {
+          if (nw.state === 'activated') toast('应用已更新', 'info');
+        });
+      });
+    }).catch(err => {
+      // sw.js 不存在时静默失败，不影响应用使用
+      console.log('Service Worker 未注册（离线功能不可用）');
+    });
+  }
+}
+
+// PWA 安装提示
+let deferredPrompt = null;
+function initInstallPrompt() {
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    deferredPrompt = e;
+    // 显示安装横幅
+    const bar = document.getElementById('installBar');
+    if (!localStorage.getItem('installDismissed')) {
+      bar.classList.remove('hidden');
+    }
+  });
+  window.addEventListener('appinstalled', () => {
+    deferredPrompt = null;
+    document.getElementById('installBar').classList.add('hidden');
+    toast('安装成功！', 'ok');
+  });
+}
+
+function installPWA() {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  deferredPrompt.userChoice.then(choice => {
+    if (choice.outcome === 'accepted') {
+      document.getElementById('installBar').classList.add('hidden');
+    }
+    deferredPrompt = null;
+  });
+}
+
+function dismissInstall() {
+  document.getElementById('installBar').classList.add('hidden');
+  localStorage.setItem('installDismissed', '1');
+}
+
+// ==================== 常量与数据 ====================
+const STORE_KEY = 'duoduo_honghua_v3';
+const DEF_TAGS = ['整理玩具','照顾弟弟','帮妈妈晾衣服','自己吃饭','按时睡觉','认真刷牙','帮忙做家务','分享零食','主动写作业','乖乖起床','对人有礼貌','勇敢尝试新事物'];
+
+let D = load();
+let curKid = D.children[0]?.id || 1;
+let curTab = 'garden';
+let selTag = '';
+
+function defaults() {
+  return {
+    need:20,
+    children:[
+      {id:1,name:'大宝',flowers:0,color:'#E85D5D'},
+      {id:2,name:'小宝',flowers:0,color:'#F5A623'}
+    ],
+    records:[],wishes:[],tags:[...DEF_TAGS]
+  };
+}
+function load() {
+  try{const s=localStorage.getItem(STORE_KEY);if(s){const d=JSON.parse(s);if(d.children&&d.records&&d.wishes){if(!d.tags)d.tags=[...DEF_TAGS];return d;}}}catch(e){}
+  return defaults();
+}
+function save(){localStorage.setItem(STORE_KEY,JSON.stringify(D))}
+
+// ==================== 生成小花SVG ====================
+function mkFlower(sz, color, on) {
+  let p='';
+  for(let i=0;i<5;i++){
+    if(on){
+      const op=i%2===0?0.9:0.75;
+      p+=`<g transform="rotate(${i*72})"><ellipse rx="3.2" ry="5.8" cy="-5.5" fill="${color}" opacity="${op}"/></g>`;
+    }else{
+      p+=`<g transform="rotate(${i*72})"><ellipse rx="3.2" ry="5.8" cy="-5.5" fill="none" stroke="${color}" stroke-width="0.9" opacity="0.18" stroke-dasharray="2 1.5"/></g>`;
+    }
+  }
+  const center=on
+    ?`<circle r="3.8" fill="#FFD700"/><circle r="2.2" fill="#FFA000" opacity="0.4"/>`
+    :`<circle r="3.8" fill="none" stroke="${color}" stroke-width="0.9" opacity="0.18" stroke-dasharray="2 1.5"/>`;
+  return `<svg width="${sz}" height="${sz}" viewBox="0 0 32 32"><g transform="translate(16,16)">${p}${center}</g></svg>`;
+}
+
+// ==================== 核心操作 ====================
+function giveFlower(childId,content){
+  const kid=D.children.find(c=>c.id===childId);
+  if(!kid||!content.trim())return;
+  kid.flowers++;
+  D.records.unshift({id:Date.now(),childId,content:content.trim(),date:new Date().toISOString(),type:'earn'});
+  save();renderAll();animPetals();
+  if(kid.flowers>0&&kid.flowers%D.need===0){
+    setTimeout(()=>{animCelebrate();toast(kid.name+' 集齐'+D.need+'朵小红花，可以兑换礼物啦！','party')},350);
+  }else{toast('给'+kid.name+' +1 朵小红花','ok')}
+}
+
+function delRecord(rid){
+  const r=D.records.find(x=>x.id===rid);if(!r)return;
+  const kid=D.children.find(c=>c.id===r.childId);
+  if(r.type==='earn'&&kid)kid.flowers=Math.max(0,kid.flowers-1);
+  if(r.type==='redeem'&&kid)kid.flowers+=(r.flowerCount||D.need);
+  D.records=D.records.filter(x=>x.id!==rid);save();renderAll();toast('已撤销','info');
+}
+
+function undoLast(){
+  const r=D.records.find(x=>x.childId===curKid&&x.type==='earn');
+  if(!r){toast('没有可撤销的记录','err');return}
+  showConfirm('确定撤销这朵小红花吗？<br><span style="color:var(--muted);font-size:13px">"'+r.content+'"</span>',()=>delRecord(r.id));
+}
+
+function addWish(childId,name){
+  if(!name.trim())return;
+  D.wishes.push({id:Date.now(),childId,name:name.trim()});
+  save();renderAll();toast('心愿已添加','ok');
+}
+
+function delWish(wid){D.wishes=D.wishes.filter(w=>w.id!==wid);save();renderAll()}
+
+function redeem(childId,giftName){
+  const kid=D.children.find(c=>c.id===childId);
+  if(!kid||kid.flowers<D.need||!giftName.trim())return;
+  kid.flowers-=D.need;
+  D.records.unshift({id:Date.now(),childId,content:giftName.trim(),date:new Date().toISOString(),type:'redeem',flowerCount:D.need});
+  const idx=D.wishes.findIndex(w=>w.childId===childId&&w.name===giftName.trim());
+  if(idx>=0)D.wishes.splice(idx,1);
+  save();renderAll();animCelebrate();toast(kid.name+' 成功兑换了'+giftName.trim()+'！','party');
+}
+
+function addTag(name){
+  if(!name.trim())return;
+  if(D.tags.includes(name.trim())){toast('标签已存在','err');return}
+  D.tags.push(name.trim());save();drawQTags();toast('标签已添加','ok');
+}
+
+function removeTag(name){
+  D.tags=D.tags.filter(t=>t!==name);if(selTag===name)selTag='';
+  save();drawQTags();
+}
+
+// ==================== 渲染 ====================
+function renderAll(){renderKids();renderMain()}
+
+function renderKids(){
+  const el=document.getElementById('kidBar');
+  el.innerHTML=D.children.map(k=>{
+    const on=k.id===curKid;
+    const rem=k.flowers%D.need;
+    const disp=(rem===0&&k.flowers>0)?D.need:rem;
+    const pct=disp/D.need;
+    return `<div class="kid-card flex-1 p-3.5 rounded-2xl border-2 ${on?'on':''}" style="background:${on?'var(--card)':'rgba(255,255,255,.45)'};border-color:${on?k.color:'transparent'}" onclick="curKid=${k.id};renderAll()">
+      <div class="flex items-center gap-2 mb-2">
+        <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm" style="background:${k.color}">${k.name[0]}</div>
+        <span class="text-base">${k.name}</span>
+        ${k.flowers>=D.need?'<span class="ml-auto text-[10px] px-1.5 py-0.5 rounded-full text-white" style="background:var(--accent)">可兑换</span>':''}
+      </div>
+      <div class="flex items-center gap-2">
+        <div class="flex-1 h-2 rounded-full overflow-hidden" style="background:var(--border)">
+          <div class="h-full rounded-full transition-all duration-500" style="width:${pct*100}%;background:linear-gradient(90deg,${k.color},var(--secondary))"></div>
+        </div>
+        <span class="text-sm font-bold" style="color:${k.color}">${k.flowers}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderMain(){
+  const el=document.getElementById('mainArea');
+  if(curTab==='garden')el.innerHTML=htmlGarden();
+  else if(curTab==='records')el.innerHTML=htmlRecords();
+  else el.innerHTML=htmlWishes();
+}
+
+function htmlGarden(){
+  const k=D.children.find(c=>c.id===curKid);if(!k)return'';
+  const rem=k.flowers%D.need;
+  const disp=(rem===0&&k.flowers>0)?D.need:rem;
+  const pct=disp/D.need;
+  const can=k.flowers>=D.need;
+  const left=can?0:D.need-disp;
+  const R=68,C=2*Math.PI*R,off=C*(1-pct);
+  const rounds=Math.floor(k.flowers/D.need)+(k.flowers%D.need>0?1:(k.flowers>0?0:1));
+  const lastEarn=D.records.find(x=>x.childId===curKid&&x.type==='earn');
+
+  let dots='';
+  for(let i=0;i<D.need;i++){
+    const got=i<disp;
+    dots+=`<div class="flex items-center justify-center ${got?'dot-earned':''}" style="min-height:42px">${mkFlower(38,k.color,got)}</div>`;
+  }
+
+  return `<div class="flex flex-col items-center py-2">
+    <div class="relative mb-5" style="animation:floaty 4s ease-in-out infinite">
+      <svg width="170" height="170" viewBox="0 0 170 170">
+        <circle cx="85" cy="85" r="${R}" fill="none" stroke="var(--border)" stroke-width="11"/>
+        <circle cx="85" cy="85" r="${R}" fill="none" stroke="url(#gProg)" stroke-width="11" stroke-linecap="round" class="ring-progress" stroke-dasharray="${C}" stroke-dashoffset="${off}"/>
+        <defs><linearGradient id="gProg" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="${k.color}"/><stop offset="100%" stop-color="var(--secondary)"/>
+        </linearGradient></defs>
+      </svg>
+      <div class="absolute inset-0 flex flex-col items-center justify-center">
+        <span class="text-4xl font-bold" style="color:${k.color}">${disp}</span>
+        <span class="text-sm" style="color:var(--muted)">/ ${D.need} 朵</span>
+      </div>
+    </div>
+
+    ${can
+      ?`<div class="w-full mb-4 p-4 rounded-2xl text-center" style="background:linear-gradient(135deg,var(--accent),#80DEEA)">
+          <p class="text-white text-lg mb-2">可以兑换礼物啦！</p>
+          <button onclick="openRedeem()" class="btn-main inline-flex items-center gap-2 px-6 py-2 rounded-full bg-white text-base font-bold" style="color:var(--accent)"><i class="fa-solid fa-gift"></i>去兑换</button>
+        </div>`
+      :`<p class="text-sm mb-4" style="color:var(--muted)">再获得 <strong style="color:${k.color}">${left}</strong> 朵就可以兑换礼物了</p>`}
+
+    <button onclick="openGive()" class="btn-main w-full py-4 rounded-2xl text-white text-xl mb-3" style="background:linear-gradient(135deg,${k.color},#FF8A80);box-shadow:0 6px 24px ${k.color}44;animation:glow 2.5s ease-in-out infinite">
+      <i class="fa-solid fa-plus mr-2"></i>给小红花
+    </button>
+
+    ${lastEarn?`<div class="w-full mb-5 p-3 rounded-xl flex items-center gap-3" style="background:rgba(232,93,93,.06);border:1.5px dashed var(--primary-light)">
+      <div class="flex-1 min-w-0">
+        <p class="text-xs" style="color:var(--muted)">最近获得</p>
+        <p class="text-sm truncate">"${lastEarn.content}"</p>
+      </div>
+      <button onclick="undoLast()" class="shrink-0 px-3 py-1.5 rounded-lg text-sm font-bold border-2 transition hover:bg-red-50" style="color:var(--primary);border-color:var(--primary-light)">
+        <i class="fa-solid fa-rotate-left mr-1"></i>撤销
+      </button>
+    </div>`:''}
+
+    <div class="w-full">
+      <div class="flex items-center justify-between mb-3">
+        <p class="text-sm" style="color:var(--muted)">红花花园</p>
+        <p class="text-xs" style="color:var(--muted)">第 ${rounds} 轮</p>
+      </div>
+      <div class="grid grid-cols-5 gap-1 mb-3 justify-items-center">${dots}</div>
+    </div>
+    <p class="text-xs mt-1" style="color:var(--muted)">累计 ${k.flowers} 朵 · 可兑换 ${Math.floor(k.flowers/D.need)} 次</p>
+  </div>`;
+}
+
+function htmlRecords(){
+  const recs=D.records.filter(r=>r.childId===curKid);
+  const k=D.children.find(c=>c.id===curKid);
+  if(!recs.length)return `<div class="flex flex-col items-center justify-center py-20">
+    <i class="fa-solid fa-book-open text-5xl mb-4" style="color:var(--border)"></i>
+    <p class="text-lg" style="color:var(--muted)">还没有记录</p>
+    <p class="text-sm" style="color:var(--muted)">给${k?.name||'孩子'}一朵小红花吧</p></div>`;
+  const grp={};
+  recs.forEach(r=>{const key=new Date(r.date).toISOString().slice(0,10);if(!grp[key])grp[key]=[];grp[key].push(r)});
+  const wd=['日','一','二','三','四','五','六'];
+  let h='';
+  Object.entries(grp).forEach(([key,items])=>{
+    const d=new Date(key+'T00:00:00');
+    h+=`<div class="mb-5"><div class="flex items-center gap-2 mb-2">
+      <span class="text-sm font-bold">${d.getMonth()+1}月${d.getDate()}日</span>
+      <span class="text-xs" style="color:var(--muted)">周${wd[d.getDay()]}</span>
+    </div><div class="flex flex-col gap-2">`;
+    items.forEach(r=>{
+      const earn=r.type==='earn';
+      const t=new Date(r.date);
+      const ts=String(t.getHours()).padStart(2,'0')+':'+String(t.getMinutes()).padStart(2,'0');
+      h+=`<div class="rec-item flex items-center gap-3 p-3 rounded-xl" style="background:var(--card)">
+        <div class="w-9 h-9 rounded-full flex items-center justify-center shrink-0" style="background:${earn?'var(--primary-light)':'rgba(78,205,196,.12)'}">
+          <i class="fa-solid ${earn?'fa-heart':'fa-gift'} text-sm" style="color:${earn?'var(--primary)':'var(--accent)'}"></i>
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="text-sm truncate">${earn?r.content:'兑换：'+r.content}</p>
+          <p class="text-xs" style="color:var(--muted)">${ts}</p>
+        </div>
+        <span class="text-sm font-bold shrink-0" style="color:${earn?'var(--primary)':'var(--accent)'}">${earn?'+1':'-'+(r.flowerCount||D.need)}</span>
+        <button onclick="askDel(${r.id})" class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition" style="color:var(--primary);background:var(--primary-light)" aria-label="撤销">
+          <i class="fa-solid fa-rotate-left text-xs"></i>
+        </button>
+      </div>`;
+    });
+    h+='</div></div>';
+  });
+  return h;
+}
+
+function htmlWishes(){
+  const k=D.children.find(c=>c.id===curKid);
+  const can=k&&k.flowers>=D.need;
+  const ws=D.wishes.filter(w=>w.childId===curKid);
+  let h='';
+  if(can){
+    h+=`<div class="mb-5 p-4 rounded-2xl" style="background:linear-gradient(135deg,rgba(78,205,196,.08),rgba(78,205,196,.03));border:2px dashed var(--accent)">
+      <div class="flex items-center justify-between">
+        <div><p class="text-base font-bold" style="color:var(--accent)">可以兑换礼物了！</p>
+        <p class="text-xs" style="color:var(--muted)">当前 ${k.flowers} 朵红花</p></div>
+        <button onclick="openRedeem()" class="px-4 py-2 rounded-full text-white text-sm font-bold" style="background:var(--accent)">去兑换</button>
+      </div></div>`;
+  }
+  h+=`<div class="flex items-center justify-between mb-3">
+    <p class="text-base font-bold">${k?.name||''}的心愿单</p>
+    <button onclick="openWish()" class="w-8 h-8 rounded-full flex items-center justify-center" style="background:var(--primary-light);color:var(--primary)"><i class="fa-solid fa-plus text-sm"></i></button>
+  </div>`;
+  if(!ws.length){
+    h+=`<div class="flex flex-col items-center py-12">
+      <i class="fa-solid fa-wand-magic-sparkles text-4xl mb-3" style="color:var(--border)"></i>
+      <p class="text-sm" style="color:var(--muted)">还没有心愿，点击 + 添加想要的礼物</p></div>`;
+  }else{
+    h+='<div class="flex flex-col gap-2.5">';
+    ws.forEach(w=>{
+      h+=`<div class="wish-card flex items-center gap-3 p-3 rounded-xl" style="background:var(--card)">
+        <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style="background:linear-gradient(135deg,var(--secondary),#FFD180)">
+          <i class="fa-solid fa-gift text-white"></i></div>
+        <span class="flex-1 text-sm">${w.name}</span>
+        ${can?`<button onclick="redeem(${curKid},'${esc(w.name)}')" class="px-3 py-1 rounded-full text-xs text-white font-bold" style="background:var(--accent)">兑换</button>`:''}
+        <button onclick="delWish(${w.id})" class="w-6 h-6 rounded-full flex items-center justify-center opacity-40 hover:opacity-100 hover:bg-red-50 transition" aria-label="删除"><i class="fa-solid fa-xmark text-xs"></i></button>
+      </div>`;
+    });
+    h+='</div>';
+  }
+  const done=D.records.filter(r=>r.childId===curKid&&r.type==='redeem');
+  if(done.length){
+    h+=`<div class="mt-6"><p class="text-base font-bold mb-3">已兑换的礼物</p><div class="flex flex-col gap-2">`;
+    done.forEach(r=>{
+      const d=new Date(r.date);
+      h+=`<div class="flex items-center gap-3 p-3 rounded-xl" style="background:rgba(78,205,196,.06)">
+        <div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style="background:rgba(78,205,196,.12)">
+          <i class="fa-solid fa-check text-sm" style="color:var(--accent)"></i></div>
+        <span class="flex-1 text-sm">${r.content}</span>
+        <span class="text-xs" style="color:var(--muted)">${d.getMonth()+1}/${d.getDate()}</span>
+      </div>`;
+    });
+    h+='</div></div>';
+  }
+  return h;
+}
+
+// ==================== 模态框 ====================
+function openM(id){document.getElementById(id).classList.remove('hide');document.body.style.overflow='hidden'}
+function closeM(id){document.getElementById(id).classList.add('hide');document.body.style.overflow=''}
+
+function openGive(){
+  selTag='';document.getElementById('giveInput').value='';
+  document.getElementById('addTagArea').classList.add('hidden');
+  drawQTags();openM('mGive');
+  setTimeout(()=>document.getElementById('giveInput').focus(),300);
+}
+
+function drawQTags(){
+  const el=document.getElementById('qTags');
+  let h=D.tags.map(t=>
+    `<span class="qtag inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-sm border-2" style="border-color:${selTag===t?'var(--primary)':'var(--border)'};background:${selTag===t?'var(--primary-light)':'var(--card)'};color:${selTag===t?'var(--primary)':'var(--text)'}" onclick="pickTag('${esc(t)}')">
+      ${t}<i class="fa-solid fa-xmark text-[10px] opacity-30 hover:opacity-100 ml-0.5" onclick="event.stopPropagation();removeTag('${esc(t)}')"></i>
+    </span>`
+  ).join('');
+  h+=`<span class="qtag inline-flex items-center justify-center w-8 h-8 rounded-full border-2 border-dashed text-sm" style="border-color:var(--border);color:var(--muted)" onclick="showAddTag()"><i class="fa-solid fa-plus text-xs"></i></span>`;
+  el.innerHTML=h;
+}
+
+function pickTag(t){selTag=selTag===t?'':t;document.getElementById('giveInput').value=selTag;drawQTags()}
+function showAddTag(){document.getElementById('addTagArea').classList.remove('hidden');document.getElementById('newTagInput').value='';setTimeout(()=>document.getElementById('newTagInput').focus(),100)}
+function hideAddTag(){document.getElementById('addTagArea').classList.add('hidden')}
+
+function doAddTag(){
+  const v=document.getElementById('newTagInput').value.trim();
+  if(!v){toast('请输入标签名','err');return}
+  addTag(v);hideAddTag();selTag=v;document.getElementById('giveInput').value=v;drawQTags();
+}
+
+function doGive(){
+  const v=document.getElementById('giveInput').value.trim();
+  if(!v){toast('请输入好事内容','err');return}
+  giveFlower(curKid,v);closeM('mGive');
+}
+
+function openWish(){document.getElementById('wishInput').value='';openM('mWish');setTimeout(()=>document.getElementById('wishInput').focus(),300)}
+function doWish(){const v=document.getElementById('wishInput').value.trim();if(!v){toast('请输入礼物名称','err');return}addWish(curKid,v);closeM('mWish')}
+
+function openRedeem(){
+  const k=D.children.find(c=>c.id===curKid);
+  if(!k||k.flowers<D.need){toast('红花还不够哦','err');return}
+  document.getElementById('redeemInput').value='';drawRedeemList();openM('mRedeem');
+}
+
+function drawRedeemList(){
+  const ws=D.wishes.filter(w=>w.childId===curKid);
+  const el=document.getElementById('redeemList');
+  if(!ws.length){el.innerHTML='<p class="text-xs" style="color:var(--muted)">心愿单还是空的，可在下方自定义</p>';return}
+  el.innerHTML=ws.map(w=>
+    `<button onclick="document.getElementById('redeemInput').value='${esc(w.name)}'" class="flex items-center gap-2 p-2.5 rounded-lg text-left text-sm border-2 hover:border-current transition" style="border-color:var(--border)">
+      <i class="fa-solid fa-gift text-xs" style="color:var(--secondary)"></i>${w.name}</button>`
+  ).join('');
+}
+
+function doRedeem(){const v=document.getElementById('redeemInput').value.trim();if(!v){toast('请输入礼物名称','err');return}redeem(curKid,v);closeM('mRedeem')}
+
+function openSettings(){
+  const el=document.getElementById('setBody');
+  el.innerHTML=`
+    <p class="text-sm font-bold mb-3" style="color:var(--muted)">孩子名字</p>
+    ${D.children.map((k,i)=>
+      `<div class="flex items-center gap-3 mb-3">
+        <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold shrink-0" style="background:${k.color}">${k.name[0]}</div>
+        <input type="text" value="${k.name}" maxlength="6" onchange="D.children[${i}].name=this.value.trim()||'宝宝';save();renderAll()" class="flex-1 px-3 py-2 rounded-lg border-2 text-base" style="border-color:var(--border)">
+      </div>`
+    ).join('')}
+    <div class="mt-5 mb-4">
+      <p class="text-sm font-bold mb-2" style="color:var(--muted)">兑换所需红花数</p>
+      <div class="flex items-center gap-3">
+        <input type="number" value="${D.need}" min="5" max="100" onchange="D.need=Math.max(5,parseInt(this.value)||20);save();renderAll()" class="w-20 px-3 py-2 rounded-lg border-2 text-base text-center" style="border-color:var(--border)">
+        <span class="text-sm" style="color:var(--muted)">朵</span>
+      </div>
+    </div>
+    <div class="mt-5 mb-4">
+      <p class="text-sm font-bold mb-2" style="color:var(--muted)">快捷标签管理</p>
+      <div class="flex flex-wrap gap-2 mb-3">${D.tags.map(t=>
+        `<span class="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-sm border-2" style="border-color:var(--border);background:var(--card)">
+          ${t}<i class="fa-solid fa-xmark text-[10px] opacity-40 hover:opacity-100 cursor-pointer ml-0.5" onclick="removeTag('${esc(t)}');openSettings()"></i>
+        </span>`
+      ).join('')}</div>
+      <div class="flex gap-2">
+        <input id="setNewTag" type="text" maxlength="10" placeholder="新标签名" class="flex-1 px-3 py-2 rounded-lg border-2 text-sm" style="border-color:var(--border)" onkeydown="if(event.key==='Enter'){addTag(this.value);this.value='';openSettings()}">
+        <button onclick="const i=document.getElementById('setNewTag');addTag(i.value);i.value='';openSettings()" class="px-4 py-2 rounded-lg text-white text-sm" style="background:var(--primary)">添加</button>
+      </div>
+    </div>
+    <hr style="border-color:var(--border)" class="my-4">
+    <button onclick="askReset()" class="w-full py-2.5 rounded-lg text-sm border-2 transition hover:bg-red-50" style="color:#E85D5D;border-color:#E85D5D33">清除所有数据</button>
+  `;
+  openM('mSet');
+}
+
+// ==================== 确认弹窗 ====================
+function showConfirm(msg,onYes){
+  const wrap=document.getElementById('confirmWrap');
+  wrap.innerHTML=`<div class="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 px-5" onclick="if(event.target===this)this.remove()">
+    <div class="bg-white rounded-2xl p-6 w-full max-w-sm text-center">
+      <i class="fa-solid fa-triangle-exclamation text-3xl mb-3" style="color:var(--secondary)"></i>
+      <p class="text-base mb-5">${msg}</p>
+      <div class="flex gap-3">
+        <button onclick="this.closest('.fixed').remove()" class="flex-1 py-2.5 rounded-xl border-2 text-sm" style="border-color:var(--border)">取消</button>
+        <button id="_cfYes" class="flex-1 py-2.5 rounded-xl text-white text-sm" style="background:var(--primary)">确认</button>
+      </div>
+    </div></div>`;
+  document.getElementById('_cfYes').onclick=()=>{wrap.innerHTML='';onYes()};
+}
+
+function askDel(rid){
+  const r=D.records.find(x=>x.id===rid);if(!r)return;
+  const action=r.type==='earn'?'撤销这朵红花':'撤销这次兑换';
+  showConfirm(`确定${action}吗？<br><span style="color:var(--muted);font-size:13px">"${r.content}"</span>`,()=>delRecord(rid));
+}
+
+function askReset(){
+  showConfirm('确定要清除所有数据吗？<br><span style="color:var(--muted);font-size:13px">此操作不可恢复</span>',()=>{
+    D=defaults();curKid=D.children[0].id;save();renderAll();closeM('mSet');toast('数据已重置','info');
+  });
+}
+
+// ==================== Tab ====================
+function goTab(t){curTab=t;document.querySelectorAll('.tbtn').forEach(b=>b.classList.toggle('on',b.dataset.t===t));renderMain()}
+
+// ==================== 动画 ====================
+function animPetals(){
+  const cols=['#E85D5D','#FF8A80','#FFB347','#FFD180','#FF6B6B'];
+  for(let i=0;i<10;i++){setTimeout(()=>{
+    const p=document.createElement('div');p.className='petal';
+    Object.assign(p.style,{left:(Math.random()*80+10)+'vw',top:'-20px',
+      width:(Math.random()*14+8)+'px',height:(Math.random()*14+8)+'px',
+      background:cols[~~(Math.random()*cols.length)],borderRadius:'50% 0 50% 0',
+      animationDuration:(Math.random()*2+2)+'s'});
+    document.body.appendChild(p);setTimeout(()=>p.remove(),4500);
+  },i*80)}
+}
+
+function animCelebrate(){
+  const cols=['#E85D5D','#FFB347','#4ECDC4','#FFD180','#FF8A80','#80DEEA','#FF6B6B'];
+  for(let i=0;i<40;i++){setTimeout(()=>{
+    const c=document.createElement('div');c.className='cft';
+    Object.assign(c.style,{left:(Math.random()*100)+'vw',
+      width:(Math.random()*8+4)+'px',height:(Math.random()*8+4)+'px',
+      background:cols[~~(Math.random()*cols.length)],borderRadius:Math.random()>.5?'50%':'2px',
+      animationDuration:(Math.random()*2+2)+'s',animationDelay:(Math.random()*.5)+'s'});
+    document.body.appendChild(c);setTimeout(()=>c.remove(),5000);
+  },i*40)}
+}
+
+// ==================== Toast ====================
+function toast(msg,type){
+  const ct=document.getElementById('toasts');
+  const t=document.createElement('div');
+  const bg={ok:'var(--primary)',err:'#EF4444',info:'var(--text)',party:'var(--secondary)'}[type]||'var(--text)';
+  const ic={ok:'fa-heart',err:'fa-circle-exclamation',info:'fa-circle-info',party:'fa-star'}[type]||'fa-circle-info';
+  t.className='toast-in flex items-center gap-2 px-4 py-2.5 rounded-full text-white text-sm shadow-lg whitespace-nowrap';
+  t.style.background=bg;t.innerHTML=`<i class="fa-solid ${ic}"></i>${msg}`;
+  ct.appendChild(t);setTimeout(()=>t.remove(),2800);
+}
+
+function esc(s){return s.replace(/'/g,"\\'").replace(/"/g,'&quot;')}
+
+// ==================== 初始化 ====================
+initManifest();  // 生成 PWA manifest
+initSW();        // 注册 Service Worker
+initInstallPrompt(); // 安装提示
+renderAll();
+</script>
+</body>
+</html>
