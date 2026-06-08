@@ -168,6 +168,10 @@
         <div class="w-10 h-10 rounded-2xl flex items-center justify-center" style="background:var(--primary-light)"><i class="fa-solid fa-sun text-lg" style="color:var(--primary)"></i></div>
         <span class="text-xs font-bold">花园</span>
       </button>
+      <button class="tbtn flex-1 flex flex-col items-center py-3 gap-1" data-t="medals" onclick="goTab('medals')">
+        <div class="w-10 h-10 rounded-2xl flex items-center justify-center bg-gray-100"><i class="fa-solid fa-medal text-lg" style="color:var(--muted)"></i></div>
+        <span class="text-xs">勋章</span>
+      </button>
       <button class="tbtn flex-1 flex flex-col items-center py-3 gap-1" data-t="records" onclick="goTab('records')">
         <div class="w-10 h-10 rounded-2xl flex items-center justify-center bg-gray-100"><i class="fa-solid fa-clock-rotate-left text-lg" style="color:var(--muted)"></i></div>
         <span class="text-xs">记录</span>
@@ -198,6 +202,8 @@
         </h2>
         <button onclick="closeM('mGive')" class="w-9 h-9 rounded-xl flex items-center justify-center hover:bg-gray-100"><i class="fa-solid fa-xmark text-lg"></i></button>
       </div>
+      <p class="text-sm mb-2" style="color:var(--muted)">选择类别：</p>
+      <div id="dimBtns" class="flex gap-2 mb-4 flex-wrap"></div>
       <p class="text-sm mb-2" style="color:var(--muted)">快速选择：</p>
       <div id="qTags" class="flex flex-wrap gap-2 mb-4"></div>
       <div id="addTagArea" class="mb-5 hidden">
@@ -256,6 +262,17 @@
     </div>
   </div>
 
+  <!-- 模态框：勋章解锁 -->
+  <div id="mMedalUnlock" class="modal-bg hide fixed inset-0 z-[200] flex items-center justify-center bg-black/40 px-6">
+    <div class="modal-box bg-white rounded-[28px] p-8 w-full max-w-sm text-center">
+      <p class="text-base mb-2" style="color:var(--secondary)">恭喜获得新勋章！</p>
+      <div id="medalUnlockIcon" class="text-7xl my-4" style="animation:bounceIn .6s ease"></div>
+      <h3 id="medalUnlockName" class="text-2xl mb-2" style="color:var(--primary)"></h3>
+      <p id="medalUnlockDesc" class="text-base mb-6" style="color:var(--muted)"></p>
+      <button onclick="closeM('mMedalUnlock')" class="btn-main w-full py-4 rounded-2xl text-white text-xl" style="background:linear-gradient(135deg,var(--secondary),#FFD180)">太棒了！</button>
+    </div>
+  </div>
+
 <script>
 // ==================== PWA 初始化 ====================
 function genAppIcon(size){
@@ -302,21 +319,80 @@ function installPWA(){if(!deferredPrompt)return;deferredPrompt.prompt();deferred
 function dismissInstall(){document.getElementById('installBar').classList.add('hidden');localStorage.setItem('installDismissed','1')}
 
 // ==================== 数据 ====================
-const STORE_KEY='duoduo_honghua_v4';
-const DEF_TAGS=['整理玩具','照顾弟弟','帮妈妈晾衣服','自己吃饭','按时睡觉','认真刷牙','帮忙做家务','分享零食','主动写作业','乖乖起床','对人有礼貌','勇敢尝试新事物'];
+const STORE_KEY='duoduo_honghua_v5';
+
+// 维度定义：每件好事分类到不同维度
+const DIMS={
+  self:{name:'自理',icon:'fa-shirt',color:'#FFB347',plant:'sunflower',label:'自己的事自己做'},
+  care:{name:'关爱',icon:'fa-hand-holding-heart',color:'#FF6B9D',plant:'rose',label:'对家人朋友好'},
+  explore:{name:'探索',icon:'fa-magnifying-glass',color:'#9C6ADE',plant:'lavender',label:'动脑动手学本领'},
+  emotion:{name:'情绪',icon:'fa-face-smile',color:'#6BCB77',plant:'clover',label:'开心面对每一天'},
+  persist:{name:'坚持',icon:'fa-fire',color:'#4FC3F7',plant:'tulip',label:'好习惯天天做'}
+};
+
+// 默认标签：每个标签带维度
+const DEF_TAGS=[
+  {name:'整理玩具',dim:'self'},{name:'自己吃饭',dim:'self'},{name:'按时睡觉',dim:'self'},{name:'认真刷牙',dim:'self'},{name:'乖乖起床',dim:'self'},
+  {name:'照顾弟弟',dim:'care'},{name:'帮妈妈晾衣服',dim:'care'},{name:'分享零食',dim:'care'},{name:'帮忙做家务',dim:'care'},{name:'对人有礼貌',dim:'care'},
+  {name:'主动写作业',dim:'explore'},{name:'勇敢尝试新事物',dim:'explore'},
+  {name:'不乱发脾气',dim:'emotion'},{name:'勇敢说对不起',dim:'emotion'}
+];
+
+// 勋章定义
+const MEDAL_DEFS=[
+  {id:'self_1',dim:'self',name:'自理小帮手',desc:'自理类好事累计5次',need:5,icon:'🧹'},
+  {id:'self_2',dim:'self',name:'自理达人',desc:'自理类好事累计15次',need:15,icon:'⭐'},
+  {id:'self_3',dim:'self',name:'自理之星',desc:'自理类好事累计30次',need:30,icon:'🏆'},
+  {id:'care_1',dim:'care',name:'暖心小宝贝',desc:'关爱类好事累计5次',need:5,icon:'💕'},
+  {id:'care_2',dim:'care',name:'关爱小天使',desc:'关爱类好事累计15次',need:15,icon:'👼'},
+  {id:'care_3',dim:'care',name:'爱心大使',desc:'关爱类好事累计30次',need:30,icon:'❤️‍🔥'},
+  {id:'explore_1',dim:'explore',name:'好奇小种子',desc:'探索类好事累计3次',need:3,icon:'🔍'},
+  {id:'explore_2',dim:'explore',name:'探索小先锋',desc:'探索类好事累计10次',need:10,icon:'🧭'},
+  {id:'explore_3',dim:'explore',name:'智慧小达人',desc:'探索类好事累计20次',need:20,icon:'🎓'},
+  {id:'emotion_1',dim:'emotion',name:'开心小花朵',desc:'情绪类好事累计3次',need:3,icon:'😊'},
+  {id:'emotion_2',dim:'emotion',name:'情绪小管家',desc:'情绪类好事累计10次',need:10,icon:'🧘'},
+  {id:'emotion_3',dim:'emotion',name:'阳光小使者',desc:'情绪类好事累计20次',need:20,icon:'☀️'},
+  {id:'persist_1',dim:'persist',name:'坚持小苗苗',desc:'连续3天获得红花',need:3,icon:'🌱'},
+  {id:'persist_2',dim:'persist',name:'坚持小花树',desc:'连续7天获得红花',need:7,icon:'🌳'},
+  {id:'persist_3',dim:'persist',name:'坚持小英雄',desc:'连续14天获得红花',need:14,icon:'🦸'},
+  {id:'special_all',dim:'special',name:'全能小花匠',desc:'4个类别各至少获得1朵花',need:4,icon:'🌈'},
+  {id:'special_50',dim:'special',name:'红花大满贯',desc:'累计获得50朵红花',need:50,icon:'👑'}
+];
 
 let D=load();
 let curKid=D.children[0]?.id||1;
 let curTab='garden';
 let selTag='';
+let selDim='self';
+let setSelDim='self';
 
 function defaults(){
   return{need:20,children:[
-    {id:1,name:'豆豆',flowers:0,color:'#FF6B9D',emoji:'🧒',avatar:''},
-    {id:2,name:'桃桃',flowers:0,color:'#4FC3F7',emoji:'👶',avatar:''}
-  ],records:[],wishes:[],tags:[...DEF_TAGS]};
+    {id:1,name:'大宝',flowers:0,color:'#FF6B9D',emoji:'🧒',avatar:''},
+    {id:2,name:'小宝',flowers:0,color:'#4FC3F7',emoji:'👶',avatar:''}
+  ],records:[],wishes:[],tags:JSON.parse(JSON.stringify(DEF_TAGS)),unlockedMedals:{}};
 }
-function load(){try{const s=localStorage.getItem(STORE_KEY);if(s){const d=JSON.parse(s);if(d.children&&d.records&&d.wishes){if(!d.tags)d.tags=[...DEF_TAGS];d.children.forEach(c=>{if(!c.emoji)c.emoji='😊';if(typeof c.avatar==='undefined')c.avatar=''});return d}}}catch(e){}return defaults()}
+function load(){
+  try{
+    const s=localStorage.getItem(STORE_KEY);
+    if(s){
+      const d=JSON.parse(s);
+      if(d.children&&d.records){
+        // 兼容老格式：tags 是字符串数组
+        if(d.tags&&d.tags.length&&typeof d.tags[0]==='string'){
+          const map={};DEF_TAGS.forEach(t=>{map[t.name]=t.dim});
+          d.tags=d.tags.map(t=>({name:t,dim:map[t]||'self'}));
+        }
+        if(!d.tags)d.tags=JSON.parse(JSON.stringify(DEF_TAGS));
+        if(!d.unlockedMedals)d.unlockedMedals={};
+        d.children.forEach(c=>{if(!c.emoji)c.emoji='😊'});
+        d.records.forEach(r=>{if(r.type==='earn'&&!r.dim)r.dim='self'});
+        return d;
+      }
+    }
+  }catch(e){}
+  return defaults();
+}
 function save(){localStorage.setItem(STORE_KEY,JSON.stringify(D))}
 
 // ==================== 生成小花SVG ====================
@@ -345,6 +421,44 @@ function lighten(hex){
   return '#'+[r,g,b].map(v=>Math.min(255,v+50).toString(16).padStart(2,'0')).join('');
 }
 
+// ==================== 维度统计与连续天数 ====================
+function getDimCounts(childId){
+  const counts={self:0,care:0,explore:0,emotion:0};
+  D.records.forEach(r=>{
+    if(r.childId===childId&&r.type==='earn'&&counts.hasOwnProperty(r.dim))counts[r.dim]++;
+  });
+  return counts;
+}
+
+function getMaxStreak(childId){
+  const dateSet={};
+  D.records.forEach(r=>{if(r.childId===childId&&r.type==='earn')dateSet[new Date(r.date).toISOString().slice(0,10)]=true});
+  const dates=Object.keys(dateSet).sort();
+  if(!dates.length)return 0;
+  let max=1,cur=1;
+  for(let i=1;i<dates.length;i++){
+    const diff=(new Date(dates[i])-new Date(dates[i-1]))/864e5;
+    if(Math.abs(diff-1)<0.1){cur++;if(cur>max)max=cur}else cur=1;
+  }
+  return max;
+}
+
+function getCurrentStreak(childId){
+  const dateSet={};
+  D.records.forEach(r=>{if(r.childId===childId&&r.type==='earn')dateSet[new Date(r.date).toISOString().slice(0,10)]=true});
+  const dates=Object.keys(dateSet).sort().reverse();
+  if(!dates.length)return 0;
+  const today=new Date().toISOString().slice(0,10);
+  const yest=new Date(Date.now()-864e5).toISOString().slice(0,10);
+  if(dates[0]!==today&&dates[0]!==yest)return 0;
+  let streak=1;
+  for(let i=1;i<dates.length;i++){
+    const diff=(new Date(dates[i-1])-new Date(dates[i]))/864e5;
+    if(Math.abs(diff-1)<0.1)streak++;else break;
+  }
+  return streak;
+}
+
 // 渲染头像：自定义图片优先，没有则使用 emoji
 function avatarHTML(k,size,extraClass){
   const sz=size||40;
@@ -356,12 +470,12 @@ function avatarHTML(k,size,extraClass){
 }
 
 // ==================== 核心操作 ====================
-function giveFlower(childId,content){
+function giveFlower(childId,content,dim){
   const kid=D.children.find(c=>c.id===childId);
   if(!kid||!content.trim())return;
   kid.flowers++;
-  D.records.unshift({id:Date.now(),childId,content:content.trim(),date:new Date().toISOString(),type:'earn'});
-  save();renderAll();animPetals();
+  D.records.unshift({id:Date.now(),childId,content:content.trim(),date:new Date().toISOString(),type:'earn',dim:dim||selDim||'self'});
+  save();renderAll();animPetals();checkMedals(childId);
   if(kid.flowers>0&&kid.flowers%D.need===0){
     setTimeout(()=>{animCelebrate();toast(kid.name+' 集齐'+D.need+'朵红花，可以兑换礼物啦！','party')},350);
   }else{toast('给'+kid.name+' +1 朵小红花','ok')}
@@ -394,8 +508,47 @@ function redeem(childId,giftName){
   save();renderAll();animCelebrate();toast(kid.name+' 成功兑换了'+giftName.trim()+'！','party');
 }
 
-function addTag(name){if(!name.trim())return;if(D.tags.includes(name.trim())){toast('标签已存在','err');return}D.tags.push(name.trim());save();drawQTags();toast('标签已添加','ok')}
-function removeTag(name){D.tags=D.tags.filter(t=>t!==name);if(selTag===name)selTag='';save();drawQTags()}
+function addTag(name,dim){if(!name.trim())return;const n=name.trim();if(D.tags.some(t=>t.name===n)){toast('标签已存在','err');return}D.tags.push({name:n,dim:dim||selDim||'self'});save();drawQTags();toast('标签已添加','ok')}
+function removeTag(name){D.tags=D.tags.filter(t=>t.name!==name);if(selTag===name)selTag='';save();drawQTags()}
+
+function checkMedals(childId){
+  const counts=getDimCounts(childId);
+  const streak=getMaxStreak(childId);
+  const total=D.records.filter(r=>r.childId===childId&&r.type==='earn').length;
+  const usedDims={};
+  Object.keys(counts).forEach(k=>{if(counts[k]>0)usedDims[k]=true});
+
+  const newly=[];
+  MEDAL_DEFS.forEach(m=>{
+    if(D.unlockedMedals[m.id])return;
+    let progress=0;
+    if(m.dim==='special'){
+      if(m.id==='special_all')progress=Object.keys(usedDims).length;
+      else if(m.id==='special_50')progress=total;
+    }else if(m.dim==='persist'){
+      progress=streak;
+    }else{
+      progress=counts[m.dim]||0;
+    }
+    if(progress>=m.need){
+      D.unlockedMedals[m.id]=Date.now();
+      newly.push(m);
+    }
+  });
+  if(newly.length){
+    save();
+    // 依次展示勋章解锁弹窗
+    newly.forEach((m,i)=>{
+      setTimeout(()=>{
+        document.getElementById('medalUnlockIcon').textContent=m.icon;
+        document.getElementById('medalUnlockName').textContent=m.name;
+        document.getElementById('medalUnlockDesc').textContent=m.desc;
+        openM('mMedalUnlock');
+        animPetals();
+      },i*1500);
+    });
+  }
+}
 
 // ==================== 渲染 ====================
 function renderAll(){renderKids();renderMain()}
@@ -426,6 +579,7 @@ function renderKids(){
 function renderMain(){
   const el=document.getElementById('mainArea');
   if(curTab==='garden')el.innerHTML=htmlGarden();
+  else if(curTab==='medals')el.innerHTML=htmlMedals();
   else if(curTab==='records')el.innerHTML=htmlRecords();
   else el.innerHTML=htmlWishes();
 }
@@ -600,29 +754,162 @@ function htmlWishes(){
   return h;
 }
 
+function htmlMedals(){
+  const counts=getDimCounts(curKid);
+  const streak=getMaxStreak(curKid);
+  const total=D.records.filter(r=>r.childId===curKid&&r.type==='earn').length;
+  const usedDims={};
+  Object.keys(counts).forEach(k=>{if(counts[k]>0)usedDims[k]=true});
+
+  // 当前勋章进度摘要
+  let h='<div class="mb-4 p-4 rounded-2xl" style="background:linear-gradient(135deg,rgba(255,179,71,.1),rgba(255,107,157,.1));border:2px solid var(--secondary)">';
+  h+='<p class="text-base font-bold mb-2" style="color:var(--secondary)"><i class="fa-solid fa-medal mr-1"></i>当前进度</p>';
+  h+='<div class="grid grid-cols-2 gap-2 text-sm">';
+  Object.entries(DIMS).forEach(([k,d])=>{
+    h+=`<div class="flex items-center gap-1.5"><i class="fa-solid ${d.icon}" style="color:${d.color}"></i>${d.name} <strong style="color:${d.color}">${counts[k]||0}</strong></div>`;
+  });
+  h+=`<div class="flex items-center gap-1.5"><i class="fa-solid fa-fire" style="color:#4FC3F7"></i>最长连续 <strong style="color:#4FC3F7">${streak}</strong> 天</div>`;
+  h+=`<div class="flex items-center gap-1.5"><i class="fa-solid fa-heart" style="color:var(--primary)"></i>累计 <strong style="color:var(--primary)">${total}</strong> 朵</div>`;
+  h+='</div></div>';
+
+  // 按维度分组勋章
+  Object.entries(DIMS).forEach(([dk,dim])=>{
+    const medals=MEDAL_DEFS.filter(m=>m.dim===dk);
+    if(!medals.length)return;
+    h+=`<div class="mb-4"><div class="flex items-center gap-2 mb-2">`;
+    h+=`<div class="w-7 h-7 rounded-lg flex items-center justify-center" style="background:${dim.color}20"><i class="fa-solid ${dim.icon} text-sm" style="color:${dim.color}"></i></div>`;
+    h+=`<span class="text-base font-bold" style="color:${dim.color}">${dim.name}勋章</span>`;
+    h+=`<span class="text-xs" style="color:var(--muted)">${dim.label}</span></div>`;
+    h+='<div class="grid grid-cols-3 gap-2">';
+    medals.forEach(m=>{
+      const unlocked=!!D.unlockedMedals[m.id];
+      const progress=dk==='persist'?streak:(counts[dk]||0);
+      const pct=Math.min(1,progress/m.need);
+      const bg=unlocked?'#FFD70010':'#f5f5f5';
+      const bc=unlocked?'#FFD70040':'#e0e0e0';
+      const ft=unlocked?'filter:none':'filter:grayscale(1) opacity(.4)';
+      h+=`<div class="medal-card p-3 rounded-2xl text-center" style="background:${bg};border:2px solid ${bc};${unlocked?'':'opacity:.7;'}">`;
+      h+=`<div class="text-4xl mb-1" style="${ft}">${m.icon}</div>`;
+      h+=`<p class="text-xs font-bold mb-1" style="color:${unlocked?dim.color:'var(--muted)'}">${m.name}</p>`;
+      if(unlocked){
+        h+=`<p class="text-[10px]" style="color:var(--accent)"><i class="fa-solid fa-check"></i> 已获得</p>`;
+      }else{
+        h+=`<div class="w-full h-1.5 rounded-full mb-1" style="background:${dim.color}15"><div class="h-full rounded-full" style="width:${pct*100}%;background:${dim.color}"></div></div>`;
+        h+=`<p class="text-[10px]" style="color:var(--muted)">${progress}/${m.need}</p>`;
+      }
+      h+='</div>';
+    });
+    h+='</div></div>';
+  });
+
+  // 特殊勋章
+  const specialMedals=MEDAL_DEFS.filter(m=>m.dim==='special');
+  h+='<div class="mb-4"><div class="flex items-center gap-2 mb-2">';
+  h+=`<div class="w-7 h-7 rounded-lg flex items-center justify-center" style="background:#FFD70020"><i class="fa-solid fa-crown text-sm" style="color:#FFD700"></i></div>`;
+  h+=`<span class="text-base font-bold" style="color:#FFD700">特别勋章</span></div><div class="grid grid-cols-2 gap-2">`;
+  specialMedals.forEach(m=>{
+    const unlocked=!!D.unlockedMedals[m.id];
+    let progress=0;
+    if(m.id==='special_all')progress=Object.keys(usedDims).length;
+    else if(m.id==='special_50')progress=total;
+    const pct=Math.min(1,progress/m.need);
+    const bg=unlocked?'#FFD70010':'#f5f5f5';
+    const bc=unlocked?'#FFD70040':'#e0e0e0';
+    const ft=unlocked?'filter:none':'filter:grayscale(1) opacity(.4)';
+    h+=`<div class="medal-card p-3 rounded-2xl text-center" style="background:${bg};border:2px solid ${bc};${unlocked?'':'opacity:.7;'}">`;
+    h+=`<div class="text-4xl mb-1" style="${ft}">${m.icon}</div>`;
+    h+=`<p class="text-xs font-bold mb-1" style="color:${unlocked?'#D4A000':'var(--muted)'}">${m.name}</p>`;
+    if(unlocked){
+      h+=`<p class="text-[10px]" style="color:var(--accent)"><i class="fa-solid fa-check"></i> 已获得</p>`;
+    }else{
+      h+=`<div class="w-full h-1.5 rounded-full mb-1" style="background:#FFD70015"><div class="h-full rounded-full" style="width:${pct*100}%;background:#FFD700"></div></div>`;
+      h+=`<p class="text-[10px]" style="color:var(--muted)">${progress}/${m.need}</p>`;
+    }
+    h+='</div>';
+  });
+  h+='</div></div>';
+
+  const unlockedCount=Object.keys(D.unlockedMedals).length;
+  h+=`<div class="text-center py-3"><p class="text-sm" style="color:var(--muted)">已解锁 ${unlockedCount} / ${MEDAL_DEFS.length} 枚勋章</p></div>`;
+  return h;
+}
+
 // ==================== 模态框 ====================
 function openM(id){document.getElementById(id).classList.remove('hide');document.body.style.overflow='hidden'}
 function closeM(id){document.getElementById(id).classList.add('hide');document.body.style.overflow=''}
 
 function openGive(){
-  selTag='';document.getElementById('giveInput').value='';
+  selTag='';selDim='self';document.getElementById('giveInput').value='';
   document.getElementById('addTagArea').classList.add('hidden');
-  drawQTags();openM('mGive');
+  drawDimBtns();drawQTags();openM('mGive');
   setTimeout(()=>document.getElementById('giveInput').focus(),300);
+}
+
+function drawDimBtns(){
+  const el=document.getElementById('dimBtns');
+  if(!el)return;
+  el.innerHTML=Object.entries(DIMS).map(([k,d])=>{
+    const on=selDim===k;
+    return `<button class="dim-btn px-3 py-1.5 rounded-xl text-xs font-bold" style="background:${on?d.color:'#f3f4f6'};color:${on?'#fff':d.color};border:2px solid ${on?d.color:'transparent'}" onclick="selDim='${k}';selTag='';document.getElementById('giveInput').value='';drawDimBtns();drawQTags()">
+      <i class="fa-solid ${d.icon}"></i> ${d.name}
+    </button>`;
+  }).join('');
+}
+
+// 设置页面专用：只更新维度按钮 + 输入框占位符，保留输入内容
+function drawSetDimBtns(){
+  const el=document.getElementById('setDimBtns');
+  if(!el)return;
+  el.innerHTML=Object.entries(DIMS).map(([k,d])=>{
+    const on=setSelDim===k;
+    return `<button class="dim-btn px-2.5 py-1 rounded-lg text-xs font-bold" style="background:${on?d.color:'#f3f4f6'};color:${on?'#fff':d.color};border:2px solid ${on?d.color:'transparent'}" onclick="setSelDim='${k}';drawSetDimBtns();updateSetTagInput()">
+      <i class="fa-solid ${d.icon}"></i> ${d.name}
+    </button>`;
+  }).join('');
+}
+function updateSetTagInput(){
+  const ipt=document.getElementById('setNewTag');
+  if(ipt)ipt.placeholder='新标签名（已选：'+(DIMS[setSelDim]?.name||'自理')+'）';
+}
+// 设置页面：刷新标签列表（不重新打开整个模态框）
+function drawSetTagsList(){
+  const el=document.getElementById('setTagsList');
+  if(!el)return;
+  el.innerHTML=D.tags.map(t=>{
+    const tn=typeof t==='string'?t:t.name;
+    const di=DIMS[typeof t==='string'?'self':t.dim]||DIMS.self;
+    return `<span class="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-sm" style="background:${di.color}15;border:2px solid ${di.color}30;color:${di.color}">
+      <i class="fa-solid ${di.icon} text-[10px]"></i> ${tn}<i class="fa-solid fa-xmark text-[10px] opacity-40 hover:opacity-100 cursor-pointer ml-0.5" onclick="removeTag('${esc(tn)}');drawSetTagsList()"></i>
+    </span>`;
+  }).join('');
 }
 
 function drawQTags(){
   const el=document.getElementById('qTags');
-  let h=D.tags.map(t=>
-    `<span class="qtag inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold" style="border:3px solid ${selTag===t?'var(--primary)':'var(--border)'};background:${selTag===t?'var(--primary-light)':'var(--card)'};color:${selTag===t?'var(--primary)':'var(--text)'}" onclick="pickTag('${esc(t)}')">
-      ${t}<i class="fa-solid fa-xmark text-[10px] opacity-30 hover:opacity-100 ml-0.5" onclick="event.stopPropagation();removeTag('${esc(t)}')"></i>
-    </span>`
-  ).join('');
-  h+=`<span class="qtag inline-flex items-center justify-center w-10 h-10 rounded-xl border-3 border-dashed text-sm" style="border:3px dashed var(--border);color:var(--muted)" onclick="showAddTag()"><i class="fa-solid fa-plus"></i></span>`;
+  // 按当前选中的维度过滤标签
+  const visibleTags=D.tags.filter(t=>{
+    const tdim=typeof t==='string'?'self':t.dim;
+    return tdim===selDim;
+  });
+  let h=visibleTags.map(t=>{
+    const tname=typeof t==='string'?t:t.name;
+    const dimInfo=DIMS[selDim]||DIMS.self;
+    const on=selTag===tname;
+    return `<span class="qtag inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-bold" style="border:2px solid ${on?dimInfo.color:'var(--border)'};background:${on?dimInfo.color+'15':'var(--card)'};color:${on?dimInfo.color:'var(--text)'}" onclick="pickTag('${esc(tname)}')">
+      <i class="fa-solid ${dimInfo.icon} text-[10px]"></i> ${tname}<i class="fa-solid fa-xmark text-[10px] opacity-30 hover:opacity-100 ml-0.5" onclick="event.stopPropagation();removeTag('${esc(tname)}')"></i>
+    </span>`;
+  }).join('');
+  h+=`<span class="qtag inline-flex items-center justify-center w-9 h-9 rounded-xl text-sm" style="border:2px dashed var(--border);color:var(--muted)" onclick="showAddTag()"><i class="fa-solid fa-plus"></i></span>`;
   el.innerHTML=h;
 }
 
-function pickTag(t){selTag=selTag===t?'':t;document.getElementById('giveInput').value=selTag;drawQTags()}
+function pickTag(t){
+  selTag=selTag===t?'':t;
+  const found=D.tags.find(x=>(typeof x==='string'?x:x.name)===t);
+  selDim=(found&&typeof found==='object')?(found.dim||'self'):'self';
+  document.getElementById('giveInput').value=selTag;
+  drawDimBtns();drawQTags();
+}
 function showAddTag(){document.getElementById('addTagArea').classList.remove('hidden');document.getElementById('newTagInput').value='';setTimeout(()=>document.getElementById('newTagInput').focus(),100)}
 function hideAddTag(){document.getElementById('addTagArea').classList.add('hidden')}
 
@@ -632,7 +919,7 @@ function doAddTag(){
   addTag(v);hideAddTag();selTag=v;document.getElementById('giveInput').value=v;drawQTags();
 }
 
-function doGive(){const v=document.getElementById('giveInput').value.trim();if(!v){toast('请输入好事内容','err');return}giveFlower(curKid,v);closeM('mGive')}
+function doGive(){const v=document.getElementById('giveInput').value.trim();if(!v){toast('请输入好事内容','err');return}giveFlower(curKid,v,selDim);closeM('mGive')}
 function openWish(){document.getElementById('wishInput').value='';openM('mWish');setTimeout(()=>document.getElementById('wishInput').focus(),300)}
 function doWish(){const v=document.getElementById('wishInput').value.trim();if(!v){toast('请输入礼物名称','err');return}addWish(curKid,v);closeM('mWish')}
 
@@ -700,14 +987,23 @@ function openSettings(){
     </div>
     <div class="mt-5 mb-4">
       <p class="text-sm font-bold mb-2" style="color:var(--muted)">快捷标签管理</p>
-      <div class="flex flex-wrap gap-2 mb-3">${D.tags.map(t=>
-        `<span class="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-sm" style="background:var(--primary-light);border:2px solid var(--border)">
-          ${t}<i class="fa-solid fa-xmark text-[10px] opacity-40 hover:opacity-100 cursor-pointer ml-0.5" onclick="removeTag('${esc(t)}');openSettings()"></i>
-        </span>`
-      ).join('')}</div>
+      <div id="setTagsList" class="flex flex-wrap gap-2 mb-3">${D.tags.map(t=>{
+        const tn=typeof t==='string'?t:t.name;
+        const di=DIMS[typeof t==='string'?'self':t.dim]||DIMS.self;
+        return `<span class="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-sm" style="background:${di.color}15;border:2px solid ${di.color}30;color:${di.color}">
+          <i class="fa-solid ${di.icon} text-[10px]"></i> ${tn}<i class="fa-solid fa-xmark text-[10px] opacity-40 hover:opacity-100 cursor-pointer ml-0.5" onclick="removeTag('${esc(tn)}');drawSetTagsList()"></i>
+        </span>`;
+      }).join('')}</div>
+      <p class="text-xs mb-1.5" style="color:var(--muted)">选择类别：</p>
+      <div id="setDimBtns" class="flex gap-1.5 mb-3 flex-wrap">${Object.entries(DIMS).map(([k,d])=>{
+        const on=setSelDim===k;
+        return `<button class="dim-btn px-2.5 py-1 rounded-lg text-xs font-bold" style="background:${on?d.color:'#f3f4f6'};color:${on?'#fff':d.color};border:2px solid ${on?d.color:'transparent'}" onclick="setSelDim='${k}';drawSetDimBtns();updateSetTagInput()">
+          <i class="fa-solid ${d.icon}"></i> ${d.name}
+        </button>`;
+      }).join('')}</div>
       <div class="flex gap-2">
-        <input id="setNewTag" type="text" maxlength="10" placeholder="新标签名" class="flex-1 px-3 py-2.5 rounded-xl border-2 text-sm" style="border-color:var(--border)" onkeydown="if(event.key==='Enter'){addTag(this.value);this.value='';openSettings()}">
-        <button onclick="const i=document.getElementById('setNewTag');addTag(i.value);i.value='';openSettings()" class="px-4 py-2.5 rounded-xl text-white text-sm" style="background:var(--primary)">添加</button>
+        <input id="setNewTag" type="text" maxlength="10" placeholder="新标签名（已选：${DIMS[setSelDim]?.name||'自理'}）" class="flex-1 px-3 py-2.5 rounded-xl border-2 text-sm" style="border-color:var(--border)" onkeydown="if(event.key==='Enter'){addTag(this.value,setSelDim);this.value='';drawSetTagsList()}">
+        <button onclick="const i=document.getElementById('setNewTag');addTag(i.value,setSelDim);i.value='';drawSetTagsList()" class="px-4 py-2.5 rounded-xl text-white text-sm" style="background:var(--primary)">添加</button>
       </div>
     </div>
     <hr class="my-5" style="border-color:var(--border)">
