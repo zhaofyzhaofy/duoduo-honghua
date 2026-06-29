@@ -69,8 +69,8 @@
     .btn-main{transition:transform .15s}.btn-main:active{transform:scale(.93)}
 
     /* 孩子卡片 */
-    .kid-card{transition:all .25s ease;cursor:pointer;border:3px solid transparent}
-    .kid-card.on{transform:translateY(-4px);box-shadow:0 8px 24px var(--shadow)}
+    .member-card{transition:all .25s ease;cursor:pointer;border:3px solid transparent}
+    .member-card.on{transform:translateY(-4px);box-shadow:0 8px 24px var(--shadow)}
 
     /* 快捷标签 */
     .qtag{transition:all .15s;cursor:pointer}.qtag:active{transform:scale(.92)}
@@ -157,7 +157,7 @@
         <i class="fa-solid fa-gear text-lg" style="color:var(--muted)"></i>
       </button>
     </header>
-    <div id="kidBar" class="flex gap-3 px-5 py-3"></div>
+    <div id="memberBar" class="flex gap-3 px-5 py-3 overflow-x-auto" style="scrollbar-width:none;-ms-overflow-style:none"></div>
     <main id="mainArea" class="flex-1 overflow-y-auto px-5 pb-4"></main>
   </div>
 
@@ -214,9 +214,38 @@
         </div>
       </div>
       <label class="text-sm block mb-1.5" style="color:var(--muted)">或自定义内容：</label>
-      <input id="giveInput" type="text" maxlength="50" placeholder="宝宝做了什么好事呀？" class="w-full px-4 py-3.5 rounded-xl border-3 text-lg mb-5" style="border:3px solid var(--border)" onkeydown="if(event.key==='Enter')doGive()">
+      <input id="giveInput" type="text" maxlength="50" placeholder="给 TA 记下什么好事呀？" class="w-full px-4 py-3.5 rounded-xl border-3 text-lg mb-5" style="border:3px solid var(--border)" onkeydown="if(event.key==='Enter')doGive()">
       <button onclick="doGive()" class="btn-main w-full py-4 rounded-2xl text-white text-xl" style="background:linear-gradient(135deg,var(--primary),#FF8DB5);box-shadow:0 6px 20px var(--shadow)">
         <i class="fa-solid fa-heart mr-2"></i>确认给花
+      </button>
+    </div>
+  </div>
+
+  <!-- 模态框：扣小红花 -->
+  <div id="mDeduct" class="modal-bg hide fixed inset-0 z-[100] flex items-end justify-center bg-black/30" onclick="if(event.target===this)closeM('mDeduct')">
+    <div class="modal-box bg-white rounded-t-[28px] w-full max-w-lg p-6 pb-10 max-h-[85vh] overflow-y-auto" style="border-top:4px solid #E85D5D">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-2xl" style="color:#E85D5D">
+          <i class="fa-solid fa-circle-minus mr-1"></i>扣小红花
+        </h2>
+        <button onclick="closeM('mDeduct')" class="w-9 h-9 rounded-xl flex items-center justify-center hover:bg-gray-100"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+      <p class="text-sm mb-2" style="color:var(--muted)">选择类别：</p>
+      <div id="dimBtnsDeduct" class="flex gap-2 mb-4 flex-wrap"></div>
+      <p class="text-sm mb-2" style="color:var(--muted)">快速选择：</p>
+      <div id="qTagsDeduct" class="flex flex-wrap gap-2 mb-4"></div>
+      <div id="addTagAreaDeduct" class="mb-5 hidden">
+        <div class="flex gap-2">
+          <input id="newTagInputDeduct" type="text" maxlength="10" placeholder="输入新标签名" class="flex-1 px-4 py-2.5 rounded-xl border-3 text-sm" style="border:3px solid #FFD4D4" onkeydown="if(event.key==='Enter')doAddTagDeduct()">
+          <button onclick="doAddTagDeduct()" class="px-4 py-2.5 rounded-xl text-white text-sm" style="background:#E85D5D">添加</button>
+          <button onclick="hideAddTagDeduct()" class="px-3 py-2.5 rounded-xl text-sm" style="background:#FFE0E0;color:#E85D5D">取消</button>
+        </div>
+      </div>
+      <label class="text-sm block mb-1.5" style="color:var(--muted)">或自定义原因：</label>
+      <input id="deductInput" type="text" maxlength="50" placeholder="为什么扣这朵花？" class="w-full px-4 py-3.5 rounded-xl border-3 text-lg mb-2" style="border:3px solid #FFD4D4" onkeydown="if(event.key==='Enter')doDeduct()">
+      <p class="text-xs mb-3" style="color:var(--muted)">提示：花朵会扣到 0 为止，不能为负数</p>
+      <button onclick="doDeduct()" class="btn-main w-full py-4 rounded-2xl text-white text-xl" style="background:linear-gradient(135deg,#E85D5D,#FF8E72);box-shadow:0 6px 20px rgba(232,93,93,.25)">
+        <i class="fa-solid fa-circle-minus mr-2"></i>确认扣花
       </button>
     </div>
   </div>
@@ -302,7 +331,7 @@ function genAppIcon(size){
 }
 function initManifest(){
   const icon192=genAppIcon(192),icon512=genAppIcon(512);
-  const manifest={name:'朵朵红花 - 好孩子奖励',short_name:'朵朵红花',description:'给好孩子小红花的家庭奖励应用',start_url:'./',display:'standalone',orientation:'portrait',background_color:'#E8F4FD',theme_color:'#FF6B9D',icons:[{src:icon192,sizes:'192x192',type:'image/png'},{src:icon512,sizes:'512x512',type:'image/png'}]};
+  const manifest={name:'朵朵红花 - 家庭红花奖励',short_name:'朵朵红花',description:'给每一位家庭成员的小红花奖励应用',start_url:'./',display:'standalone',orientation:'portrait',background_color:'#E8F4FD',theme_color:'#FF6B9D',icons:[{src:icon192,sizes:'192x192',type:'image/png'},{src:icon512,sizes:'512x512',type:'image/png'}]};
   const blob=new Blob([JSON.stringify(manifest)],{type:'application/json'});
   document.getElementById('manifestLink').href=URL.createObjectURL(blob);
   const link=document.createElement('link');link.rel='apple-touch-icon';link.href=icon192;document.head.appendChild(link);
@@ -319,7 +348,7 @@ function installPWA(){if(!deferredPrompt)return;deferredPrompt.prompt();deferred
 function dismissInstall(){document.getElementById('installBar').classList.add('hidden');localStorage.setItem('installDismissed','1')}
 
 // ==================== 数据 ====================
-const STORE_KEY='duoduo_honghua_v5';
+const STORE_KEY='duoduo_honghua_v6';
 
 // 维度定义：每件好事分类到不同维度
 const DIMS={
@@ -330,13 +359,69 @@ const DIMS={
   persist:{name:'坚持',icon:'fa-fire',color:'#4FC3F7',plant:'tulip',label:'好习惯天天做'}
 };
 
-// 默认标签：每个标签带维度
-const DEF_TAGS=[
-  {name:'整理玩具',dim:'self'},{name:'自己吃饭',dim:'self'},{name:'按时睡觉',dim:'self'},{name:'认真刷牙',dim:'self'},{name:'乖乖起床',dim:'self'},
-  {name:'照顾弟弟',dim:'care'},{name:'帮妈妈晾衣服',dim:'care'},{name:'分享零食',dim:'care'},{name:'帮忙做家务',dim:'care'},{name:'对人有礼貌',dim:'care'},
-  {name:'主动写作业',dim:'explore'},{name:'勇敢尝试新事物',dim:'explore'},
-  {name:'不乱发脾气',dim:'emotion'},{name:'勇敢说对不起',dim:'emotion'}
+// 默认标签：每角色一套，按角色显示
+const DEFAULT_TAGS_KID=[
+  {name:'整理玩具',dim:'self',role:'kid'},{name:'自己吃饭',dim:'self',role:'kid'},{name:'按时睡觉',dim:'self',role:'kid'},{name:'认真刷牙',dim:'self',role:'kid'},{name:'乖乖起床',dim:'self',role:'kid'},
+  {name:'照顾弟弟',dim:'care',role:'kid'},{name:'帮妈妈晾衣服',dim:'care',role:'kid'},{name:'分享零食',dim:'care',role:'kid'},{name:'帮忙做家务',dim:'care',role:'kid'},{name:'对人有礼貌',dim:'care',role:'kid'},
+  {name:'主动写作业',dim:'explore',role:'kid'},{name:'勇敢尝试新事物',dim:'explore',role:'kid'},
+  {name:'不乱发脾气',dim:'emotion',role:'kid'},{name:'勇敢说对不起',dim:'emotion',role:'kid'}
 ];
+
+const DEFAULT_TAGS_DAD=[
+  {name:'陪孩子玩',dim:'care',role:'dad'},
+  {name:'辅导作业',dim:'care',role:'dad'},
+  {name:'陪家人吃饭',dim:'care',role:'dad'},
+  {name:'关心家人',dim:'care',role:'dad'},
+  {name:'锻炼身体',dim:'self',role:'dad'},
+  {name:'健康饮食',dim:'self',role:'dad'},
+  {name:'按时睡觉',dim:'self',role:'dad'},
+  {name:'学到新技能',dim:'explore',role:'dad'},
+  {name:'修好了一样东西',dim:'explore',role:'dad'},
+  {name:'解决了一个难题',dim:'explore',role:'dad'},
+  {name:'保持好心情',dim:'emotion',role:'dad'},
+  {name:'耐心陪家人',dim:'emotion',role:'dad'}
+];
+
+const DEFAULT_TAGS_MOM=[
+  {name:'给家人做饭',dim:'care',role:'mom'},
+  {name:'陪伴孩子',dim:'care',role:'mom'},
+  {name:'关心家人',dim:'care',role:'mom'},
+  {name:'陪伴朋友',dim:'care',role:'mom'},
+  {name:'整理家务',dim:'self',role:'mom'},
+  {name:'认真护肤',dim:'self',role:'mom'},
+  {name:'自我充电',dim:'self',role:'mom'},
+  {name:'尝试新菜谱',dim:'explore',role:'mom'},
+  {name:'读完一本书',dim:'explore',role:'mom'},
+  {name:'学了新东西',dim:'explore',role:'mom'},
+  {name:'保持好心情',dim:'emotion',role:'mom'},
+  {name:'给自己一个拥抱',dim:'emotion',role:'mom'}
+];
+
+// 角色对应的默认预设
+const DEFAULT_TAGS_BY_ROLE={
+  dad:DEFAULT_TAGS_DAD,
+  mom:DEFAULT_TAGS_MOM,
+  kid:DEFAULT_TAGS_KID,
+  other:DEFAULT_TAGS_KID  // "其他"角色暂用孩子标签
+};
+
+// 合并函数：保留用户已有自定义 + 补齐缺失的预设标签
+function buildTagsWithRoleDefaults(existing){
+  const arr=Array.isArray(existing)?existing:[];
+  const defaults=[
+    ...DEFAULT_TAGS_BY_ROLE.dad,
+    ...DEFAULT_TAGS_BY_ROLE.mom,
+    ...DEFAULT_TAGS_BY_ROLE.kid
+  ];
+  const existingNames=new Set(arr.map(t=>t.name));
+  const merged=[...arr];
+  defaults.forEach(dt=>{
+    if(!existingNames.has(dt.name)){
+      merged.push({...dt});
+    }
+  });
+  return merged;
+}
 
 // 勋章定义
 const MEDAL_DEFS=[
@@ -359,38 +444,191 @@ const MEDAL_DEFS=[
   {id:'special_50',dim:'special',name:'红花大满贯',desc:'累计获得50朵红花',need:50,icon:'👑'}
 ];
 
+// 角色定义
+const ROLES={
+  dad:{name:'爸爸',emoji:'👨',defaultColor:'#4FC3F7'},
+  mom:{name:'妈妈',emoji:'👩',defaultColor:'#FFB347'},
+  kid:{name:'孩子',emoji:'🧒',defaultColor:'#FF6B9D'},
+  other:{name:'家人',emoji:'😊',defaultColor:'#9C6ADE'}
+};
+
+// 默认家庭成员（爸爸、妈妈、孩子），各自独有色便于区分
+function buildDefaultMembers(){
+  return [
+    {id:1,name:'爸爸',flowers:0,color:'#1D4ED8',emoji:'👨',avatar:'',role:'dad'},
+    {id:2,name:'妈妈',flowers:0,color:'#EC4899',emoji:'👩',avatar:'',role:'mom'},
+    {id:3,name:'大宝',flowers:0,color:'#F59E0B',emoji:'🧒',avatar:'',role:'kid'},
+    {id:4,name:'小宝',flowers:0,color:'#10B981',emoji:'👶',avatar:'',role:'kid'}
+  ];
+}
+
+// 给某个角色补默认颜色时避开已被占用的颜色
+function pickFreeColor(members,preferred){
+  const used=new Set(members.map(m=>(m.color||'').toLowerCase()));
+  if(!used.has(String(preferred).toLowerCase()))return preferred;
+  const pool=['#2563EB','#EC4899','#F97316','#14B8A6','#8B5CF6','#FACC15','#06B6D4','#EF4444'];
+  for(const c of pool)if(!used.has(c.toLowerCase()))return c;
+  return preferred;
+}
+
+// 成员颜色去重：第一次出现的色保留；后续重复色从调色板里挑未占用的替换。
+// 用于升级场景：v6 早期默认爸爸蓝(4FC3F7)可能与某些小宝色撞，统一重整。
+function dedupeMemberColors(members){
+  const pool=['#2563EB','#EC4899','#F97316','#14B8A6','#8B5CF6','#FACC15','#06B6D4','#EF4444','#4FC3F7','#FFB347','#9C6ADE','#FFD180','#FF6B9D','#5EEAD4'];
+  const seen=new Set();
+  for(const m of members){
+    const lc=(m.color||'').toLowerCase();
+    if(seen.has(lc)){
+      const free=pool.find(p=>!seen.has(p.toLowerCase()));
+      if(free){m.color=free;seen.add(free.toLowerCase());}
+    }else{
+      seen.add(lc);
+    }
+  }
+}
+
+// 把 kid 角色中"蓝色系"成员换为绿色/橙色，避免视觉上和爸爸蓝色撞系
+// 蓝色系识别：#2563EB、#1D4ED8、#4FC3F7、#3B82F6、#0EA5E9、#06B6D4 等
+function deblueKidMembers(members){
+  const blueRegex=/^#(2563|1d4e|3b82|4fc3|60a5|0ea5|06b6|1d4|2563eb|3b82f6|4fc3f7|1d4ed8|06b6d4)/i;
+  for(const m of members){
+    if(m.role!=='kid')continue;
+    if(!blueRegex.test((m.color||'').toLowerCase()))continue;
+    const used=new Set(members.map(x=>(x.color||'').toLowerCase()));
+    const alt=['#10B981','#F59E0B','#8B5CF6','#EC4899','#FACC15','#EF4444','#14B8A6'];
+    const free=alt.find(c=>!used.has(c.toLowerCase()));
+    if(free){m.color=free;}
+  }
+}
+
 let D=load();
-let curKid=D.children[0]?.id||1;
+let curMember=D.members[0]?.id||1;
 let curTab='garden';
 let selTag='';
 let selDim='self';
 let setSelDim='self';
 
 function defaults(){
-  return{need:20,children:[
-    {id:1,name:'大宝',flowers:0,color:'#FF6B9D',emoji:'🧒',avatar:''},
-    {id:2,name:'小宝',flowers:0,color:'#4FC3F7',emoji:'👶',avatar:''}
-  ],records:[],wishes:[],tags:JSON.parse(JSON.stringify(DEF_TAGS)),unlockedMedals:{}};
+  return{need:20,members:buildDefaultMembers(),records:[],wishes:[],tags:buildTagsWithRoleDefaults([]),unlockedMedals:{}};
 }
+
+// 自动迁移老数据 + 补齐爸爸、妈妈
+function migrateData(d){
+  // v5 之前是 children → 改为 members，并把 records/wishes 里的 childId 升级为 memberId
+  if(!d.members && d.children){
+    d.members = d.children.map(c => ({
+      id:c.id, name:c.name||'宝宝', flowers:c.flowers||0,
+      color:c.color||'#FF6B9D', emoji:c.emoji||'🧒',
+      avatar:c.avatar||'', role:'kid'
+    }));
+    delete d.children;
+  }
+  // 兼容：旧 records / wishes 里如果还存在 childId 字段，统一改为 memberId
+  if(Array.isArray(d.records)){
+    d.records.forEach(r => {
+      if(r.childId !== undefined && r.memberId === undefined){
+        r.memberId = r.childId;
+        delete r.childId;
+      }
+    });
+  }
+  if(Array.isArray(d.wishes)){
+    d.wishes.forEach(w => {
+      if(w.childId !== undefined && w.memberId === undefined){
+        w.memberId = w.childId;
+        delete w.childId;
+      }
+    });
+  }
+  // 老自定义标签缺 role 字段，默认为 kid（历史都是孩子向）
+  if(Array.isArray(d.tags)){
+    d.tags.forEach(t=>{
+      if(typeof t==='object' && t.role===undefined){
+        t.role='kid';
+      }
+    });
+  }
+  if(!d.members) d.members = buildDefaultMembers();
+
+  // 确保每个成员都有 role 和必要字段
+  d.members.forEach(m => {
+    if(!m.role) m.role = 'kid';
+    if(typeof m.flowers !== 'number') m.flowers = 0;
+    if(!m.color) m.color = ROLES[m.role]?.defaultColor || '#FF6B9D';
+    if(!m.emoji) m.emoji = ROLES[m.role]?.emoji || '😊';
+    if(!m.name) m.name = ROLES[m.role]?.name || '家人';
+  });
+
+  // 补齐爸爸、妈妈角色（如果还没有的话）
+  const hasRole = (role) => d.members.some(m => m.role === role);
+  if(!hasRole('dad') || !hasRole('mom')){
+    const newId = d.members.reduce((max, m) => Math.max(max, m.id||0), 0) + 1;
+    if(!hasRole('dad')){
+      const dadColor = pickFreeColor(d.members, '#2563EB');
+      d.members.unshift({id:newId, name:'爸爸', flowers:0, color:dadColor, emoji:'👨', avatar:'', role:'dad'});
+    }
+    if(!hasRole('mom')){
+      const dadIdx = d.members.findIndex(m => m.role==='dad');
+      const insertAt = dadIdx >= 0 ? dadIdx + 1 : d.members.length;
+      const momColor = pickFreeColor(d.members, '#EC4899');
+      d.members.splice(insertAt, 0, {id:newId+1, name:'妈妈', flowers:0, color:momColor, emoji:'👩', avatar:'', role:'mom'});
+    }
+  }
+  // 颜色去重：保留第一次出现的色，重复色替换为调色板中未占用的色
+  // 解决 v6 早期版本里 dad=#4FC3F7 与某些小宝色撞车的情况
+  dedupeMemberColors(d.members);
+  // kid 角色中的蓝色系自动换成绿色/橙色，避免视觉上与爸爸蓝撞系
+  deblueKidMembers(d.members);
+  return d;
+}
+
 function load(){
   try{
     const s=localStorage.getItem(STORE_KEY);
     if(s){
       const d=JSON.parse(s);
-      if(d.children&&d.records){
-        // 兼容老格式：tags 是字符串数组
+      if(d.members||d.children){
         if(d.tags&&d.tags.length&&typeof d.tags[0]==='string'){
-          const map={};DEF_TAGS.forEach(t=>{map[t.name]=t.dim});
-          d.tags=d.tags.map(t=>({name:t,dim:map[t]||'self'}));
+          // 老版本：字符串数组，按名字映射 dim 并补 role:'kid'
+          const map={};
+          [...DEFAULT_TAGS_KID,...DEFAULT_TAGS_DAD,...DEFAULT_TAGS_MOM].forEach(t=>{map[t.name]=t.dim});
+          d.tags=d.tags.map(t=>({name:t,dim:map[t]||'self',role:'kid'}));
         }
-        if(!d.tags)d.tags=JSON.parse(JSON.stringify(DEF_TAGS));
+        if(!d.tags)d.tags=[];
+        // 补齐缺失的角色预设标签
+        d.tags = buildTagsWithRoleDefaults(d.tags);
         if(!d.unlockedMedals)d.unlockedMedals={};
-        d.children.forEach(c=>{if(!c.emoji)c.emoji='😊'});
-        d.records.forEach(r=>{if(r.type==='earn'&&!r.dim)r.dim='self'});
-        return d;
+        const upgraded = migrateData(d);
+        // 持久化：任何升级（包括颜色去重）的结果都回写，避免下次再修
+        try{localStorage.setItem(STORE_KEY,JSON.stringify(upgraded))}catch(e){}
+        return upgraded;
+      }
+    }
+    // 读取老版本 key 做一次性迁移（v5 -> v6）
+    const oldKeys=['duoduo_honghua_v5','duoduo_honghua_v4','duoduo_honghua_v3'];
+    for(const k of oldKeys){
+      const old=localStorage.getItem(k);
+      if(old){
+        try{
+          const od=JSON.parse(old);
+          if(od.children||od.members){
+            if(typeof od.tags?.[0]==='string'){
+              const map={};DEFAULT_TAGS_KID.forEach(t=>{map[t.name]=t.dim});
+              od.tags=od.tags.map(t=>({name:t,dim:map[t]||'self',role:'kid'}));
+            }
+            if(od.tags) od.tags = buildTagsWithRoleDefaults(od.tags);
+            const upgraded=migrateData(od);
+            localStorage.setItem(STORE_KEY,JSON.stringify(upgraded));
+            return upgraded;
+          }
+        }catch(e){}
+        // 已被读过一次，留作下回迁移检测
+        break;
       }
     }
   }catch(e){}
+  // 清理老 key（仅在已经处理过迁移的情况下）
+  try{['duoduo_honghua_v5','duoduo_honghua_v4','duoduo_honghua_v3'].forEach(k=>localStorage.removeItem(k))}catch(e){}
   return defaults();
 }
 function save(){localStorage.setItem(STORE_KEY,JSON.stringify(D))}
@@ -422,17 +660,17 @@ function lighten(hex){
 }
 
 // ==================== 维度统计与连续天数 ====================
-function getDimCounts(childId){
+function getDimCounts(memberId){
   const counts={self:0,care:0,explore:0,emotion:0};
   D.records.forEach(r=>{
-    if(r.childId===childId&&r.type==='earn'&&counts.hasOwnProperty(r.dim))counts[r.dim]++;
+    if(r.memberId===memberId&&r.type==='earn'&&counts.hasOwnProperty(r.dim))counts[r.dim]++;
   });
   return counts;
 }
 
-function getMaxStreak(childId){
+function getMaxStreak(memberId){
   const dateSet={};
-  D.records.forEach(r=>{if(r.childId===childId&&r.type==='earn')dateSet[new Date(r.date).toISOString().slice(0,10)]=true});
+  D.records.forEach(r=>{if(r.memberId===memberId&&r.type==='earn')dateSet[new Date(r.date).toISOString().slice(0,10)]=true});
   const dates=Object.keys(dateSet).sort();
   if(!dates.length)return 0;
   let max=1,cur=1;
@@ -443,9 +681,9 @@ function getMaxStreak(childId){
   return max;
 }
 
-function getCurrentStreak(childId){
+function getCurrentStreak(memberId){
   const dateSet={};
-  D.records.forEach(r=>{if(r.childId===childId&&r.type==='earn')dateSet[new Date(r.date).toISOString().slice(0,10)]=true});
+  D.records.forEach(r=>{if(r.memberId===memberId&&r.type==='earn')dateSet[new Date(r.date).toISOString().slice(0,10)]=true});
   const dates=Object.keys(dateSet).sort().reverse();
   if(!dates.length)return 0;
   const today=new Date().toISOString().slice(0,10);
@@ -470,51 +708,72 @@ function avatarHTML(k,size,extraClass){
 }
 
 // ==================== 核心操作 ====================
-function giveFlower(childId,content,dim){
-  const kid=D.children.find(c=>c.id===childId);
-  if(!kid||!content.trim())return;
-  kid.flowers++;
-  D.records.unshift({id:Date.now(),childId,content:content.trim(),date:new Date().toISOString(),type:'earn',dim:dim||selDim||'self'});
-  save();renderAll();animPetals();checkMedals(childId);
-  if(kid.flowers>0&&kid.flowers%D.need===0){
-    setTimeout(()=>{animCelebrate();toast(kid.name+' 集齐'+D.need+'朵红花，可以兑换礼物啦！','party')},350);
-  }else{toast('给'+kid.name+' +1 朵小红花','ok')}
+function giveFlower(memberId,content,dim){
+  const member=D.members.find(c=>c.id===memberId);
+  if(!member||!content.trim())return;
+  member.flowers++;
+  D.records.unshift({id:Date.now(),memberId,content:content.trim(),date:new Date().toISOString(),type:'earn',dim:dim||selDim||'self'});
+  save();renderAll();animPetals();checkMedals(memberId);
+  if(member.flowers>0&&member.flowers%D.need===0){
+    setTimeout(()=>{animCelebrate();toast(member.name+' 集齐'+D.need+'朵红花，可以兑换礼物啦！','party')},350);
+  }else{toast('给'+member.name+' +1 朵小红花','ok')}
+}
+
+// 扣花：扣 1 朵，记录 type='deduct'
+function subtractFlower(memberId,content,dim){
+  const member=D.members.find(c=>c.id===memberId);
+  if(!member||!content.trim())return;
+  if(member.flowers<=0){toast(member.name+' 的小红花已经清零，不能再扣啦','err');return}
+  member.flowers--;
+  D.records.unshift({id:Date.now(),memberId,content:content.trim(),date:new Date().toISOString(),type:'deduct',dim:dim||selDim||'self'});
+  save();renderAll();
+  toast('扣了 '+member.name+' 1 朵小红花','info');
 }
 
 function delRecord(rid){
   const r=D.records.find(x=>x.id===rid);if(!r)return;
-  const kid=D.children.find(c=>c.id===r.childId);
-  if(r.type==='earn'&&kid)kid.flowers=Math.max(0,kid.flowers-1);
-  if(r.type==='redeem'&&kid)kid.flowers+=(r.flowerCount||D.need);
+  const member=D.members.find(c=>c.id===r.memberId);
+  if(r.type==='earn'&&member)member.flowers=Math.max(0,member.flowers-1);
+  if(r.type==='deduct'&&member)member.flowers+=1;
+  if(r.type==='redeem'&&member)member.flowers+=(r.flowerCount||D.need);
   D.records=D.records.filter(x=>x.id!==rid);save();renderAll();toast('已撤销','info');
 }
 
 function undoLast(){
-  const r=D.records.find(x=>x.childId===curKid&&x.type==='earn');
+  const r=D.records.find(x=>x.memberId===curMember&&x.type==='earn');
   if(!r){toast('没有可撤销的记录','err');return}
   showConfirm('确定撤销这朵小红花吗？<br><span style="color:var(--muted);font-size:14px">"'+r.content+'"</span>',()=>delRecord(r.id));
 }
 
-function addWish(childId,name){if(!name.trim())return;D.wishes.push({id:Date.now(),childId,name:name.trim()});save();renderAll();toast('心愿已添加','ok')}
+function addWish(memberId,name){if(!name.trim())return;D.wishes.push({id:Date.now(),memberId,name:name.trim()});save();renderAll();toast('心愿已添加','ok')}
 function delWish(wid){D.wishes=D.wishes.filter(w=>w.id!==wid);save();renderAll()}
 
-function redeem(childId,giftName){
-  const kid=D.children.find(c=>c.id===childId);
-  if(!kid||kid.flowers<D.need||!giftName.trim())return;
-  kid.flowers-=D.need;
-  D.records.unshift({id:Date.now(),childId,content:giftName.trim(),date:new Date().toISOString(),type:'redeem',flowerCount:D.need});
-  const idx=D.wishes.findIndex(w=>w.childId===childId&&w.name===giftName.trim());
+function redeem(memberId,giftName){
+  const member=D.members.find(c=>c.id===memberId);
+  if(!member||member.flowers<D.need||!giftName.trim())return;
+  member.flowers-=D.need;
+  D.records.unshift({id:Date.now(),memberId,content:giftName.trim(),date:new Date().toISOString(),type:'redeem',flowerCount:D.need});
+  const idx=D.wishes.findIndex(w=>w.memberId===memberId&&w.name===giftName.trim());
   if(idx>=0)D.wishes.splice(idx,1);
-  save();renderAll();animCelebrate();toast(kid.name+' 成功兑换了'+giftName.trim()+'！','party');
+  save();renderAll();animCelebrate();toast(member.name+' 成功兑换了'+giftName.trim()+'！','party');
 }
 
-function addTag(name,dim){if(!name.trim())return;const n=name.trim();if(D.tags.some(t=>t.name===n)){toast('标签已存在','err');return}D.tags.push({name:n,dim:dim||selDim||'self'});save();drawQTags();toast('标签已添加','ok')}
+function addTag(name,dim,role){
+  if(!name.trim())return;
+  const n=name.trim();
+  if(D.tags.some(t=>t.name===n)){toast('标签已存在','err');return}
+  const mem=D.members.find(m=>m.id===curMember);
+  const targetRole=role||mem?.role||'kid';
+  D.tags.push({name:n,dim:dim||selDim||'self',role:targetRole});
+  save();drawQTags();toast('标签已添加','ok')
+}
 function removeTag(name){D.tags=D.tags.filter(t=>t.name!==name);if(selTag===name)selTag='';save();drawQTags()}
+function getCurRole(){return D.members.find(m=>m.id===curMember)?.role||'kid'}
 
-function checkMedals(childId){
-  const counts=getDimCounts(childId);
-  const streak=getMaxStreak(childId);
-  const total=D.records.filter(r=>r.childId===childId&&r.type==='earn').length;
+function checkMedals(memberId){
+  const counts=getDimCounts(memberId);
+  const streak=getMaxStreak(memberId);
+  const total=D.records.filter(r=>r.memberId===memberId&&r.type==='earn').length;
   const usedDims={};
   Object.keys(counts).forEach(k=>{if(counts[k]>0)usedDims[k]=true});
 
@@ -551,29 +810,43 @@ function checkMedals(childId){
 }
 
 // ==================== 渲染 ====================
-function renderAll(){renderKids();renderMain()}
+function renderAll(){renderMembers();renderMain()}
 
-function renderKids(){
-  const el=document.getElementById('kidBar');
-  el.innerHTML=D.children.map(k=>{
-    const on=k.id===curKid;
+function renderMembers(){
+  const el=document.getElementById('memberBar');
+  const n=D.members.length;
+  const flexClass=n<=2?'flex-1':'shrink-0';
+  el.style.minWidth='100%';
+  el.innerHTML=D.members.map(k=>{
+    const on=k.id===curMember;
     const rem=k.flowers%D.need;
     const disp=(rem===0&&k.flowers>0)?D.need:rem;
     const pct=disp/D.need;
-    return `<div class="kid-card flex-1 p-4 rounded-2xl ${on?'on':''}" style="background:${on?'var(--card)':'rgba(255,255,255,.5)'};border-color:${on?k.color:'transparent'}" onclick="curKid=${k.id};renderAll()">
+    const roleBadge=k.role==='dad'?'爸爸':k.role==='mom'?'妈妈':k.role==='kid'?'宝贝':'';
+    return `<div class="member-card ${flexClass} p-4 rounded-2xl ${on?'on':''}" style="${n>2?'min-width:140px;':''}background:${on?'var(--card)':'rgba(255,255,255,.5)'};border-color:${on?k.color:'transparent'};border-width:3px;border-style:solid" onclick="curMember=${k.id};renderAll()">
       <div class="flex items-center gap-2.5 mb-2.5">
         ${avatarHTML(k,40)}
-        <span class="text-lg font-bold">${k.name}</span>
-        ${k.flowers>=D.need?'<span class="ml-auto text-[11px] px-2 py-0.5 rounded-lg text-white font-bold" style="background:var(--accent)">可兑换</span>':''}
+        <div class="min-w-0 flex-1">
+          <span class="text-lg font-bold truncate block">${k.name}</span>
+          ${roleBadge?`<span class="text-[10px] px-1.5 py-0.5 rounded-md" style="background:${k.color}15;color:${k.color}">${roleBadge}</span>`:''}
+        </div>
+        ${k.flowers>=D.need?'<span class="text-[11px] px-2 py-0.5 rounded-lg text-white font-bold shrink-0" style="background:var(--accent)">可兑换</span>':''}
       </div>
       <div class="flex items-center gap-2.5">
-        <div class="flex-1 h-3 rounded-full overflow-hidden" style="background:${k.color}15">
+        <div class="flex-1 h-3 rounded-full overflow-hidden" style="background:${k.color}15;min-width:60px">
           <div class="h-full rounded-full transition-all duration-500" style="width:${pct*100}%;background:linear-gradient(90deg,${k.color},${lighten(k.color)})"></div>
         </div>
-        <span class="text-lg font-bold" style="color:${k.color}">${k.flowers}</span>
+        <span class="text-lg font-bold shrink-0" style="color:${k.color}">${k.flowers}</span>
       </div>
     </div>`;
   }).join('');
+  // 如果当前选中项超出可视范围，滚动到可见
+  setTimeout(()=>{
+    const sel=el.querySelector('.member-card.on');
+    if(sel&&el.scrollWidth>el.clientWidth){
+      sel.scrollIntoView({behavior:'smooth',inline:'center',block:'nearest'});
+    }
+  },0);
 }
 
 function renderMain(){
@@ -585,7 +858,7 @@ function renderMain(){
 }
 
 function htmlGarden(){
-  const k=D.children.find(c=>c.id===curKid);if(!k)return'';
+  const k=D.members.find(c=>c.id===curMember);if(!k)return'';
   const rem=k.flowers%D.need;
   const disp=(rem===0&&k.flowers>0)?D.need:rem;
   const pct=disp/D.need;
@@ -593,7 +866,7 @@ function htmlGarden(){
   const left=can?0:D.need-disp;
   const R=68,C=2*Math.PI*R,off=C*(1-pct);
   const rounds=Math.floor(k.flowers/D.need)+(k.flowers%D.need>0?1:(k.flowers>0?0:1));
-  const lastEarn=D.records.find(x=>x.childId===curKid&&x.type==='earn');
+  const lastEarn=D.records.find(x=>x.memberId===curMember&&x.type==='earn');
 
   let dots='';
   for(let i=0;i<D.need;i++){
@@ -629,7 +902,7 @@ function htmlGarden(){
         </div>`
     }
 
-    <!-- 给花按钮 -->
+    <!-- 给花按钮 - 大块主操作 -->
     <button onclick="openGive()" class="btn-main w-full py-5 rounded-2xl text-white text-2xl mb-4" style="background:linear-gradient(135deg,${k.color},${lighten(k.color)});box-shadow:0 8px 28px ${k.color}44;animation:glow 2.5s ease-in-out infinite">
       <i class="fa-solid fa-plus mr-2"></i>给小红花
     </button>
@@ -656,18 +929,25 @@ function htmlGarden(){
       </div>
     </div>
     <p class="text-sm mt-3" style="color:var(--muted)">累计 ${k.flowers} 朵 · 可兑换 ${Math.floor(k.flowers/D.need)} 次</p>
+
+    <!-- 扣花 - 低调小按钮，放在页面最底部（次要操作） -->
+    <div class="w-full mt-5 flex justify-center">
+      <button onclick="openDeduct()" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold transition hover:scale-105 ${k.flowers<=0?'opacity-40 pointer-events-none':''}" style="background:var(--card);color:#E85D5D;border:1.5px solid #FFD4D4">
+        <i class="fa-solid fa-minus text-[10px]"></i>扣一朵小红花
+      </button>
+    </div>
   </div>`;
 }
 
 function htmlRecords(){
-  const recs=D.records.filter(r=>r.childId===curKid);
-  const k=D.children.find(c=>c.id===curKid);
+  const recs=D.records.filter(r=>r.memberId===curMember);
+  const k=D.members.find(c=>c.id===curMember);
   if(!recs.length)return `<div class="flex flex-col items-center justify-center py-20">
     <div class="w-20 h-20 rounded-full flex items-center justify-center mb-4" style="background:var(--primary-light)">
       <i class="fa-solid fa-book-open text-3xl" style="color:var(--primary)"></i>
     </div>
     <p class="text-xl mb-1" style="color:var(--muted)">还没有记录</p>
-    <p class="text-base" style="color:var(--muted)">给${k?.name||'孩子'}一朵小红花吧</p></div>`;
+    <p class="text-base" style="color:var(--muted)">给${k?.name||'家人'}一朵小红花吧</p></div>`;
   const grp={};
   recs.forEach(r=>{const key=new Date(r.date).toISOString().slice(0,10);if(!grp[key])grp[key]=[];grp[key].push(r)});
   const wd=['日','一','二','三','四','五','六'];
@@ -680,17 +960,27 @@ function htmlRecords(){
     </div><div class="flex flex-col gap-2.5">`;
     items.forEach(r=>{
       const earn=r.type==='earn';
+      const deduct=r.type==='deduct';
+      const redeem=r.type==='redeem';
       const t=new Date(r.date);
       const ts=String(t.getHours()).padStart(2,'0')+':'+String(t.getMinutes()).padStart(2,'0');
-      h+=`<div class="rec-item flex items-center gap-3 p-4 rounded-2xl" style="background:var(--card);border:2px solid ${earn?'var(--primary-light)':'#C8E6C9'}">
-        <div class="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style="background:${earn?'var(--primary-light)':'rgba(107,203,119,.12)'}">
-          <i class="fa-solid ${earn?'fa-heart':'fa-gift'} text-lg" style="color:${earn?'var(--primary)':'var(--accent)'}"></i>
+      // 类型对应的视觉
+      const iconClass = earn?'fa-heart':deduct?'fa-circle-minus':'fa-gift';
+      const iconColor = earn?'var(--primary)':deduct?'#E85D5D':'var(--accent)';
+      const iconBg    = earn?'var(--primary-light)':deduct?'#FFE0E0':'rgba(107,203,119,.12)';
+      const cardBd    = earn?'var(--primary-light)':deduct?'#FFD4D4':'#C8E6C9';
+      const numColor  = earn?'var(--primary)':deduct?'#E85D5D':'var(--accent)';
+      const numSign   = earn?'+1':deduct?'-1':'-'+(r.flowerCount||D.need);
+      const content   = earn?r.content:(deduct?'扣花：'+r.content:'兑换：'+r.content);
+      h+=`<div class="rec-item flex items-center gap-3 p-4 rounded-2xl" style="background:var(--card);border:2px solid ${cardBd}">
+        <div class="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style="background:${iconBg}">
+          <i class="fa-solid ${iconClass} text-lg" style="color:${iconColor}"></i>
         </div>
         <div class="flex-1 min-w-0">
-          <p class="text-base truncate">${earn?r.content:'兑换：'+r.content}</p>
+          <p class="text-base truncate">${content}</p>
           <p class="text-sm" style="color:var(--muted)">${ts}</p>
         </div>
-        <span class="text-lg font-bold shrink-0" style="color:${earn?'var(--primary)':'var(--accent)'}">${earn?'+1':'-'+(r.flowerCount||D.need)}</span>
+        <span class="text-lg font-bold shrink-0" style="color:${numColor}">${numSign}</span>
         <button onclick="askDel(${r.id})" class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition hover:scale-110" style="color:var(--primary);background:var(--primary-light)" aria-label="撤销">
           <i class="fa-solid fa-rotate-left text-sm"></i>
         </button>
@@ -702,9 +992,9 @@ function htmlRecords(){
 }
 
 function htmlWishes(){
-  const k=D.children.find(c=>c.id===curKid);
+  const k=D.members.find(c=>c.id===curMember);
   const can=k&&k.flowers>=D.need;
-  const ws=D.wishes.filter(w=>w.childId===curKid);
+  const ws=D.wishes.filter(w=>w.memberId===curMember);
   let h='';
   if(can){
     h+=`<div class="mb-5 p-5 rounded-2xl" style="background:linear-gradient(135deg,rgba(107,203,119,.1),rgba(107,203,119,.05));border:3px dashed var(--accent)">
@@ -731,13 +1021,13 @@ function htmlWishes(){
         <div class="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style="background:linear-gradient(135deg,var(--secondary),#FFD180)">
           <i class="fa-solid fa-gift text-white text-lg"></i></div>
         <span class="flex-1 text-base">${w.name}</span>
-        ${can?`<button onclick="redeem(${curKid},'${esc(w.name)}')" class="px-4 py-2 rounded-xl text-sm text-white font-bold" style="background:var(--accent)">兑换</button>`:''}
+        ${can?`<button onclick="redeem(${curMember},'${esc(w.name)}')" class="px-4 py-2 rounded-xl text-sm text-white font-bold" style="background:var(--accent)">兑换</button>`:''}
         <button onclick="delWish(${w.id})" class="w-8 h-8 rounded-lg flex items-center justify-center opacity-40 hover:opacity-100 hover:bg-red-50 transition" aria-label="删除"><i class="fa-solid fa-xmark text-sm"></i></button>
       </div>`;
     });
     h+='</div>';
   }
-  const done=D.records.filter(r=>r.childId===curKid&&r.type==='redeem');
+  const done=D.records.filter(r=>r.memberId===curMember&&r.type==='redeem');
   if(done.length){
     h+=`<div class="mt-6"><p class="text-xl font-bold mb-3"><i class="fa-solid fa-trophy mr-1" style="color:var(--secondary)"></i>已兑换的礼物</p><div class="flex flex-col gap-2.5">`;
     done.forEach(r=>{
@@ -755,9 +1045,9 @@ function htmlWishes(){
 }
 
 function htmlMedals(){
-  const counts=getDimCounts(curKid);
-  const streak=getMaxStreak(curKid);
-  const total=D.records.filter(r=>r.childId===curKid&&r.type==='earn').length;
+  const counts=getDimCounts(curMember);
+  const streak=getMaxStreak(curMember);
+  const total=D.records.filter(r=>r.memberId===curMember&&r.type==='earn').length;
   const usedDims={};
   Object.keys(counts).forEach(k=>{if(counts[k]>0)usedDims[k]=true});
 
@@ -886,10 +1176,14 @@ function drawSetTagsList(){
 
 function drawQTags(){
   const el=document.getElementById('qTags');
-  // 按当前选中的维度过滤标签
+  const mem=D.members.find(m=>m.id===curMember);
+  const curRole=mem?.role||'kid';
+  // 按维度过滤，再按角色过滤：带 role 的标签匹配当前角色才显示；不带 role 的共享标签所有角色都显示
   const visibleTags=D.tags.filter(t=>{
     const tdim=typeof t==='string'?'self':t.dim;
-    return tdim===selDim;
+    if(tdim!==selDim)return false;
+    if(typeof t==='object'&&t.role&&t.role!==curRole)return false;
+    return true;
   });
   let h=visibleTags.map(t=>{
     const tname=typeof t==='string'?t:t.name;
@@ -919,18 +1213,84 @@ function doAddTag(){
   addTag(v);hideAddTag();selTag=v;document.getElementById('giveInput').value=v;drawQTags();
 }
 
-function doGive(){const v=document.getElementById('giveInput').value.trim();if(!v){toast('请输入好事内容','err');return}giveFlower(curKid,v,selDim);closeM('mGive')}
+function doGive(){const v=document.getElementById('giveInput').value.trim();if(!v){toast('请输入好事内容','err');return}giveFlower(curMember,v,selDim);closeM('mGive')}
 function openWish(){document.getElementById('wishInput').value='';openM('mWish');setTimeout(()=>document.getElementById('wishInput').focus(),300)}
-function doWish(){const v=document.getElementById('wishInput').value.trim();if(!v){toast('请输入礼物名称','err');return}addWish(curKid,v);closeM('mWish')}
+function doWish(){const v=document.getElementById('wishInput').value.trim();if(!v){toast('请输入礼物名称','err');return}addWish(curMember,v);closeM('mWish')}
+
+// 扣花弹窗 - 用独立的 selTagDeduct/selDimDeduct 避免与给花冲突
+let selTagDeduct='';
+let selDimDeduct='self';
+
+function openDeduct(){
+  if(D.members.find(c=>c.id===curMember)?.flowers<=0){
+    toast('红花已经清零，不能再扣啦','err');
+    return;
+  }
+  selTagDeduct='';selDimDeduct='self';
+  document.getElementById('deductInput').value='';
+  document.getElementById('addTagAreaDeduct').classList.add('hidden');
+  drawDimBtnsDeduct();drawQTagsDeduct();openM('mDeduct');
+  setTimeout(()=>document.getElementById('deductInput').focus(),300);
+}
+
+function drawDimBtnsDeduct(){
+  const el=document.getElementById('dimBtnsDeduct');
+  if(!el)return;
+  el.innerHTML=Object.entries(DIMS).map(([k,d])=>{
+    const on=selDimDeduct===k;
+    return `<button class="dim-btn px-3 py-1.5 rounded-xl text-xs font-bold" style="background:${on?d.color:'#f3f4f6'};color:${on?'#fff':d.color};border:2px solid ${on?d.color:'transparent'}" onclick="selDimDeduct='${k}';selTagDeduct='';document.getElementById('deductInput').value='';drawDimBtnsDeduct();drawQTagsDeduct()">
+      <i class="fa-solid ${d.icon}"></i> ${d.name}
+    </button>`;
+  }).join('');
+}
+
+function drawQTagsDeduct(){
+  const el=document.getElementById('qTagsDeduct');
+  const mem=D.members.find(m=>m.id===curMember);
+  const curRole=mem?.role||'kid';
+  const visibleTags=D.tags.filter(t=>{
+    const tdim=typeof t==='string'?'self':t.dim;
+    if(tdim!==selDimDeduct)return false;
+    if(typeof t==='object'&&t.role&&t.role!==curRole)return false;
+    return true;
+  });
+  let h=visibleTags.map(t=>{
+    const tname=typeof t==='string'?t:t.name;
+    const dimInfo=DIMS[selDimDeduct]||DIMS.self;
+    const on=selTagDeduct===tname;
+    return `<span class="qtag inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-bold" style="border:2px solid ${on?dimInfo.color:'#FFD4D4'};background:${on?dimInfo.color+'15':'var(--card)'};color:${on?dimInfo.color:'var(--text)'}" onclick="pickTagDeduct('${esc(tname)}')">
+      <i class="fa-solid ${dimInfo.icon} text-[10px]"></i> ${tname}<i class="fa-solid fa-xmark text-[10px] opacity-30 hover:opacity-100 ml-0.5" onclick="event.stopPropagation();removeTag('${esc(tname)}')"></i>
+    </span>`;
+  }).join('');
+  h+=`<span class="qtag inline-flex items-center justify-center w-9 h-9 rounded-xl text-sm" style="border:2px dashed #FFD4D4;color:#E85D5D" onclick="showAddTagDeduct()"><i class="fa-solid fa-plus"></i></span>`;
+  el.innerHTML=h;
+}
+function pickTagDeduct(t){
+  selTagDeduct=selTagDeduct===t?'':t;
+  document.getElementById('deductInput').value=selTagDeduct;
+  drawDimBtnsDeduct();drawQTagsDeduct();
+}
+function showAddTagDeduct(){document.getElementById('addTagAreaDeduct').classList.remove('hidden');document.getElementById('newTagInputDeduct').value='';setTimeout(()=>document.getElementById('newTagInputDeduct').focus(),100)}
+function hideAddTagDeduct(){document.getElementById('addTagAreaDeduct').classList.add('hidden')}
+function doAddTagDeduct(){
+  const v=document.getElementById('newTagInputDeduct').value.trim();
+  if(!v){toast('请输入标签名','err');return}
+  addTag(v,selDimDeduct);hideAddTagDeduct();selTagDeduct=v;document.getElementById('deductInput').value=v;drawQTagsDeduct();
+}
+function doDeduct(){
+  const v=document.getElementById('deductInput').value.trim();
+  if(!v){toast('请输入扣花原因','err');return}
+  subtractFlower(curMember,v,selDimDeduct);closeM('mDeduct');
+}
 
 function openRedeem(){
-  const k=D.children.find(c=>c.id===curKid);
+  const k=D.members.find(c=>c.id===curMember);
   if(!k||k.flowers<D.need){toast('红花还不够哦','err');return}
   document.getElementById('redeemInput').value='';drawRedeemList();openM('mRedeem');
 }
 
 function drawRedeemList(){
-  const ws=D.wishes.filter(w=>w.childId===curKid);
+  const ws=D.wishes.filter(w=>w.memberId===curMember);
   const el=document.getElementById('redeemList');
   if(!ws.length){el.innerHTML='<p class="text-sm" style="color:var(--muted)">心愿单还是空的，可在下方自定义</p>';return}
   el.innerHTML=ws.map(w=>
@@ -939,13 +1299,16 @@ function drawRedeemList(){
   ).join('');
 }
 
-function doRedeem(){const v=document.getElementById('redeemInput').value.trim();if(!v){toast('请输入礼物名称','err');return}redeem(curKid,v);closeM('mRedeem')}
+function doRedeem(){const v=document.getElementById('redeemInput').value.trim();if(!v){toast('请输入礼物名称','err');return}redeem(curMember,v);closeM('mRedeem')}
+
+const MEMBER_COLORS=['#FF6B9D','#4FC3F7','#FFB347','#9C6ADE','#6BCB77','#FFD180','#FF6B6B','#5EEAD4'];
 
 function openSettings(){
   const el=document.getElementById('setBody');
   el.innerHTML=`
-    <p class="text-sm font-bold mb-3" style="color:var(--muted)">孩子设置</p>
-    ${D.children.map((k,i)=>`
+    <p class="text-sm font-bold mb-3" style="color:var(--muted)">家庭成员</p>
+    <p class="text-xs mb-4" style="color:var(--muted)">为每一位家人建立小红花账户，全家都能互送红花 ✨</p>
+    ${D.members.map((k,i)=>`
       <div class="mb-4 p-4 rounded-2xl" style="background:${k.color}08;border:2px solid ${k.color}20">
         <div class="flex items-start gap-4">
           <div class="shrink-0">
@@ -961,23 +1324,47 @@ function openSettings(){
             <input id="avatarFile_${i}" type="file" accept="image/*" class="hidden" onchange="pickAvatar(${i},this)">
           </div>
           <div class="flex-1 min-w-0">
-            <div class="mb-2.5">
-              <label class="text-xs block mb-1" style="color:var(--muted)">名字</label>
-              <input type="text" value="${k.name}" maxlength="6" onchange="D.children[${i}].name=this.value.trim()||'宝宝';save();renderAll()" class="w-full px-3 py-2 rounded-lg border-2 text-base" style="border-color:${k.color}30">
+            <div class="mb-2.5 flex items-center gap-2">
+              <div class="flex-1 min-w-0">
+                <label class="text-xs block mb-1" style="color:var(--muted)">名字</label>
+                <input type="text" value="${k.name}" maxlength="6" onchange="D.members[${i}].name=this.value.trim()||'家人';save();renderAll()" class="w-full px-3 py-2 rounded-lg border-2 text-base" style="border-color:${k.color}30">
+              </div>
+              <div class="shrink-0">
+                <label class="text-xs block mb-1" style="color:var(--muted)">角色</label>
+                <select onchange="D.members[${i}].role=this.value;save();openSettings()" class="px-2 py-2 rounded-lg border-2 text-base bg-white" style="border-color:${k.color}30">
+                  <option value="dad" ${k.role==='dad'?'selected':''}>👨 爸爸</option>
+                  <option value="mom" ${k.role==='mom'?'selected':''}>👩 妈妈</option>
+                  <option value="kid" ${k.role==='kid'?'selected':''}>🧒 孩子</option>
+                  <option value="other" ${k.role==='other'?'selected':''}>😊 其他</option>
+                </select>
+              </div>
             </div>
-            <div class="flex items-end gap-2">
+            <div class="flex items-end gap-2 mb-2.5">
               <div class="flex-1">
                 <label class="text-xs block mb-1" style="color:var(--muted)">emoji 头像</label>
-                <input type="text" value="${k.emoji||'😊'}" maxlength="2" onchange="D.children[${i}].emoji=this.value.trim()||'😊';D.children[${i}].avatar='';save();renderAll();openSettings()" class="w-full px-2 py-2 rounded-lg border-2 text-base text-center" style="border-color:${k.color}30">
+                <input type="text" value="${k.emoji||'😊'}" maxlength="2" onchange="D.members[${i}].emoji=this.value.trim()||'😊';D.members[${i}].avatar='';save();renderAll();openSettings()" class="w-full px-2 py-2 rounded-lg border-2 text-base text-center" style="border-color:${k.color}30">
               </div>
-              ${k.avatar?`<button onclick="D.children[${i}].avatar='';save();renderAll();openSettings()" class="shrink-0 px-3 py-2 rounded-lg text-xs" style="color:var(--muted);background:#f3f4f6;border:2px solid #e5e7eb" title="清除自定义头像">
+              ${k.avatar?`<button onclick="D.members[${i}].avatar='';save();renderAll();openSettings()" class="shrink-0 px-3 py-2 rounded-lg text-xs" style="color:var(--muted);background:#f3f4f6;border:2px solid #e5e7eb" title="清除自定义头像">
                 <i class="fa-solid fa-trash-can"></i>
               </button>`:''}
             </div>
+            <div>
+              <label class="text-xs block mb-1" style="color:var(--muted)">主题色</label>
+              <div class="flex flex-wrap gap-1.5">${MEMBER_COLORS.map(c=>{
+                const on=(c||'').toLowerCase()===(k.color||'').toLowerCase();
+                return `<button onclick="D.members[${i}].color='${c}';save();renderAll();openSettings()" class="w-7 h-7 rounded-lg transition ${on?'ring-2 ring-offset-2':''}" style="background:${c};${on?'--tw-ring-color:'+c:''}" title="${c}"></button>`;
+              }).join('')}</div>
+            </div>
           </div>
+          ${D.members.length>1?`<button onclick="askRemoveMember(${i})" class="shrink-0 w-9 h-9 rounded-xl flex items-center justify-center transition hover:bg-red-50" style="color:#E85D5D;background:#FFE0EC;margin-top:24px" title="删除该成员">
+            <i class="fa-solid fa-user-xmark"></i>
+          </button>`:''}
         </div>
       </div>
     `).join('')}
+    <button onclick="addMember()" class="btn-main w-full py-3 rounded-2xl text-base font-bold mb-5 flex items-center justify-center gap-2" style="background:var(--primary-light);color:var(--primary);border:2px dashed var(--primary)">
+      <i class="fa-solid fa-plus"></i>添加新成员
+    </button>
     <div class="mt-5 mb-4">
       <p class="text-sm font-bold mb-2" style="color:var(--muted)">兑换所需红花数</p>
       <div class="flex items-center gap-3">
@@ -987,11 +1374,13 @@ function openSettings(){
     </div>
     <div class="mt-5 mb-4">
       <p class="text-sm font-bold mb-2" style="color:var(--muted)">快捷标签管理</p>
+      <p class="text-xs mb-2" style="color:var(--muted)">标签会按当前选中成员（<strong style="color:var(--primary)">${D.members.find(x=>x.id===curMember)?.name||''}</strong>）的角色自动归类</p>
       <div id="setTagsList" class="flex flex-wrap gap-2 mb-3">${D.tags.map(t=>{
         const tn=typeof t==='string'?t:t.name;
         const di=DIMS[typeof t==='string'?'self':t.dim]||DIMS.self;
+        const trole=typeof t==='object'&&t.role?{dad:'👨爸爸',mom:'👩妈妈',kid:'🧒孩子',other:'😊其他'}[t.role]:'通用';
         return `<span class="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-sm" style="background:${di.color}15;border:2px solid ${di.color}30;color:${di.color}">
-          <i class="fa-solid ${di.icon} text-[10px]"></i> ${tn}<i class="fa-solid fa-xmark text-[10px] opacity-40 hover:opacity-100 cursor-pointer ml-0.5" onclick="removeTag('${esc(tn)}');drawSetTagsList()"></i>
+          <i class="fa-solid ${di.icon} text-[10px]"></i> ${tn}<span class="text-[10px] opacity-60">·${trole}</span><i class="fa-solid fa-xmark text-[10px] opacity-40 hover:opacity-100 cursor-pointer ml-0.5" onclick="removeTag('${esc(tn)}');drawSetTagsList()"></i>
         </span>`;
       }).join('')}</div>
       <p class="text-xs mb-1.5" style="color:var(--muted)">选择类别：</p>
@@ -1002,8 +1391,8 @@ function openSettings(){
         </button>`;
       }).join('')}</div>
       <div class="flex gap-2">
-        <input id="setNewTag" type="text" maxlength="10" placeholder="新标签名（已选：${DIMS[setSelDim]?.name||'自理'}）" class="flex-1 px-3 py-2.5 rounded-xl border-2 text-sm" style="border-color:var(--border)" onkeydown="if(event.key==='Enter'){addTag(this.value,setSelDim);this.value='';drawSetTagsList()}">
-        <button onclick="const i=document.getElementById('setNewTag');addTag(i.value,setSelDim);i.value='';drawSetTagsList()" class="px-4 py-2.5 rounded-xl text-white text-sm" style="background:var(--primary)">添加</button>
+        <input id="setNewTag" type="text" maxlength="10" placeholder="新标签名（已选：${DIMS[setSelDim]?.name||'自理'}）" class="flex-1 px-3 py-2.5 rounded-xl border-2 text-sm" style="border-color:var(--border)" onkeydown="if(event.key==='Enter'){addTag(this.value,setSelDim,getCurRole());this.value='';drawSetTagsList()}">
+        <button onclick="const i=document.getElementById('setNewTag');addTag(i.value,setSelDim,getCurRole());i.value='';drawSetTagsList()" class="px-4 py-2.5 rounded-xl text-white text-sm" style="background:var(--primary)">添加</button>
       </div>
     </div>
     <hr class="my-5" style="border-color:var(--border)">
@@ -1031,11 +1420,56 @@ function showConfirm(msg,onYes){
 
 function askDel(rid){
   const r=D.records.find(x=>x.id===rid);if(!r)return;
-  const action=r.type==='earn'?'撤销这朵红花':'撤销这次兑换';
+  const action=r.type==='earn'?'撤销这朵红花':r.type==='deduct'?'撤销这次扣花':'撤销这次兑换';
   showConfirm(`确定${action}吗？<br><span style="color:var(--muted);font-size:14px">"${r.content}"</span>`,()=>delRecord(rid));
 }
 function askReset(){
-  showConfirm('确定要清除所有数据吗？<br><span style="color:var(--muted);font-size:14px">此操作不可恢复</span>',()=>{D=defaults();curKid=D.children[0].id;save();renderAll();closeM('mSet');toast('数据已重置','info')});
+  showConfirm('确定要清除所有数据吗？<br><span style="color:var(--muted);font-size:14px">此操作不可恢复</span>',()=>{D=defaults();curMember=D.members[0].id;save();renderAll();closeM('mSet');toast('数据已重置','info')});
+}
+
+// 添加新成员
+function addMember(){
+  const nid=D.members.reduce((max,m)=>Math.max(max,m.id||0),0)+1;
+  const color=MEMBER_COLORS.find(c=>!D.members.some(m=>(m.color||'').toLowerCase()===c.toLowerCase()))||'#5EEAD4';
+  const emojiOptions=['😊','🌟','🌈','🦄','🐻','🐼','🦊','🐯','🐰','🐶','🐱'];
+  const emoji=emojiOptions[nid%emojiOptions.length];
+  const usedNames=new Set(D.members.map(m=>m.name));
+  let defaultName='家人';
+  for(let i=1;i<=20;i++){
+    const cand=`家人${i}`;
+    if(!usedNames.has(cand)){defaultName=cand;break}
+  }
+  D.members.push({id:nid,name:defaultName,flowers:0,color,emoji,avatar:'',role:'other'});
+  curMember=nid;
+  save();renderAll();openSettings();
+  toast('已添加新成员','ok');
+  setTimeout(()=>{
+    const inputs=document.querySelectorAll('#setBody input[type="text"]');
+    const lastNameInput=inputs[inputs.length-1];
+    if(lastNameInput&&lastNameInput.maxLength===6)lastNameInput.focus();
+  },100);
+}
+
+// 删除某个成员
+function askRemoveMember(i){
+  const m=D.members[i];
+  if(!m)return;
+  const recCount=D.records.filter(r=>r.memberId===m.id).length;
+  const wishCount=D.wishes.filter(w=>w.memberId===m.id).length;
+  let msg=`确定删除「${m.name}」吗？<br><span style="color:var(--muted);font-size:14px">该成员的红花和心愿都会被清除</span>`;
+  if(recCount+wishCount>0){
+    msg+=`<br><span style="color:#E85D5D;font-size:13px">将一并删除 ${recCount} 条记录和 ${wishCount} 条心愿</span>`;
+  }
+  showConfirm(msg,()=>{
+    D.records=D.records.filter(r=>r.memberId!==m.id);
+    D.wishes=D.wishes.filter(w=>w.memberId!==m.id);
+    D.members.splice(i,1);
+    // 删除勋章记录里与该成员无关的部分（这里勋章是全局共享 key，可保留不动）
+    if(curMember===m.id){
+      curMember=D.members[0]?.id;
+    }
+    save();renderAll();openSettings();toast('成员已删除','info');
+  });
 }
 
 // 选择并压缩图片作为头像
@@ -1056,7 +1490,7 @@ function pickAvatar(idx,input){
       const ctx=c.getContext('2d');
       ctx.drawImage(img,0,0,w,h);
       try{
-        D.children[idx].avatar=c.toDataURL('image/jpeg',0.82);
+        D.members[idx].avatar=c.toDataURL('image/jpeg',0.82);
         save();renderAll();openSettings();
         toast('头像已更新','ok');
       }catch(err){
