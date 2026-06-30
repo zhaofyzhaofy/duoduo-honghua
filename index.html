@@ -446,7 +446,7 @@ const MEDAL_DEFS=[
 
 // 角色定义
 const ROLES={
-  dad:{name:'爸爸',emoji:'👨',defaultColor:'#4FC3F7'},
+  dad:{name:'爸爸',emoji:'👨',defaultColor:'#6BCB77'},
   mom:{name:'妈妈',emoji:'👩',defaultColor:'#FFB347'},
   kid:{name:'孩子',emoji:'🧒',defaultColor:'#FF6B9D'},
   other:{name:'家人',emoji:'😊',defaultColor:'#9C6ADE'}
@@ -455,10 +455,10 @@ const ROLES={
 // 默认家庭成员（爸爸、妈妈、孩子），各自独有色便于区分
 function buildDefaultMembers(){
   return [
-    {id:1,name:'爸爸',flowers:0,color:'#1D4ED8',emoji:'👨',avatar:'',role:'dad'},
-    {id:2,name:'妈妈',flowers:0,color:'#EC4899',emoji:'👩',avatar:'',role:'mom'},
-    {id:3,name:'大宝',flowers:0,color:'#F59E0B',emoji:'🧒',avatar:'',role:'kid'},
-    {id:4,name:'小宝',flowers:0,color:'#10B981',emoji:'👶',avatar:'',role:'kid'}
+    {id:1,name:'爸爸',flowers:0,color:'#6BCB77',emoji:'👨',avatar:'',role:'dad'},
+    {id:2,name:'妈妈',flowers:0,color:'#FFB347',emoji:'👩',avatar:'',role:'mom'},
+    {id:3,name:'大宝',flowers:0,color:'#FF6B9D',emoji:'🧒',avatar:'',role:'kid'},
+    {id:4,name:'小宝',flowers:0,color:'#4FC3F7',emoji:'👶',avatar:'',role:'kid'}
   ];
 }
 
@@ -498,6 +498,33 @@ function deblueKidMembers(members){
     const alt=['#10B981','#F59E0B','#8B5CF6','#EC4899','#FACC15','#EF4444','#14B8A6'];
     const free=alt.find(c=>!used.has(c.toLowerCase()));
     if(free){m.color=free;}
+  }
+}
+
+// 把"名字仍是默认名 + 颜色仍是历史默认色"的成员，统一升到当前 buildDefaultMembers 的默认色。
+// 这样老版本升级后，爸爸/妈妈/大宝/小宝的颜色会自动对齐到新方案，不依赖手动改色。
+// 已被用户手动改过（颜色不在历史默认色列表）的成员不会被覆盖。
+function migrateDefaultColors(members){
+  const newByName={
+    '爸爸':'#6BCB77',
+    '妈妈':'#FFB347',
+    '大宝':'#FF6B9D',
+    '小宝':'#4FC3F7'
+  };
+  const legacyByRole={
+    dad:['#1d4ed8','#4fc3f7','#2563eb','#3b82f6','#60a5fa','#1e40af','#0ea5e9','#06b6d4'],
+    mom:['#ec4899','#f472b6','#db2777','#be185d','#f9a8d4','#ff6b6b'],
+    kid:['#f59e0b','#10b981','#5eead4','#ffb347','#fbbf24','#facc15','#fcd34d']
+  };
+  for(const m of members){
+    const name=(m.name||'').trim();
+    const target=newByName[name];
+    if(!target)continue;
+    const legacy=(legacyByRole[m.role]||[]).map(c=>c.toLowerCase());
+    const lc=(m.color||'').toLowerCase();
+    if(legacy.includes(lc) && lc!==target.toLowerCase()){
+      m.color=target;
+    }
   }
 }
 
@@ -579,6 +606,9 @@ function migrateData(d){
   dedupeMemberColors(d.members);
   // kid 角色中的蓝色系自动换成绿色/橙色，避免视觉上与爸爸蓝撞系
   deblueKidMembers(d.members);
+  // 名字仍是默认名 + 颜色仍是历史默认色 → 升到 buildDefaultMembers 的当前默认色
+  // （只动"看起来还没手动改过"的成员，用户手动选过的色不会被覆盖）
+  migrateDefaultColors(d.members);
   return d;
 }
 
@@ -1301,7 +1331,7 @@ function drawRedeemList(){
 
 function doRedeem(){const v=document.getElementById('redeemInput').value.trim();if(!v){toast('请输入礼物名称','err');return}redeem(curMember,v);closeM('mRedeem')}
 
-const MEMBER_COLORS=['#FF6B9D','#4FC3F7','#FFB347','#9C6ADE','#6BCB77','#FFD180','#FF6B6B','#5EEAD4'];
+const MEMBER_COLORS=['#FF6B9D','#4FC3F7','#FFB347','#9C6ADE','#6BCB77','#FFD180','#FF6B6B','#5EEAD4','#10B981','#F472B6','#FBBF24'];
 
 function openSettings(){
   const el=document.getElementById('setBody');
@@ -1396,6 +1426,19 @@ function openSettings(){
       </div>
     </div>
     <hr class="my-5" style="border-color:var(--border)">
+    <div class="mb-4">
+      <p class="text-sm font-bold mb-2" style="color:var(--muted)">数据备份与恢复</p>
+      <p class="text-xs mb-3" style="color:var(--muted)">换设备或重新安装前，先导出备份；新设备打开后再导入即可完整还原</p>
+      <div class="flex gap-2">
+        <button onclick="exportData()" class="flex-1 py-2.5 rounded-xl text-sm font-bold transition hover:opacity-80" style="background:var(--primary-light);color:var(--primary);border:2px solid var(--primary-light)">
+          <i class="fa-solid fa-download mr-1"></i>导出备份
+        </button>
+        <button onclick="document.getElementById('importFile').click()" class="flex-1 py-2.5 rounded-xl text-sm font-bold transition hover:opacity-80" style="background:var(--minty);color:var(--accent);border:2px solid var(--minty)">
+          <i class="fa-solid fa-upload mr-1"></i>导入恢复
+        </button>
+      </div>
+      <input id="importFile" type="file" accept="application/json,.json" class="hidden" onchange="importData(this)">
+    </div>
     <button onclick="askReset()" class="w-full py-3 rounded-xl text-sm font-bold transition hover:bg-red-50" style="color:#E85D5D;background:#FFE0EC;border:2px solid #FFE0EC">清除所有数据</button>
   `;
   openM('mSet');
@@ -1425,6 +1468,193 @@ function askDel(rid){
 }
 function askReset(){
   showConfirm('确定要清除所有数据吗？<br><span style="color:var(--muted);font-size:14px">此操作不可恢复</span>',()=>{D=defaults();curMember=D.members[0].id;save();renderAll();closeM('mSet');toast('数据已重置','info')});
+}
+
+// ==================== 数据备份与恢复 ====================
+// 生成带时间戳的文件名
+function backupFilename(){
+  const d=new Date();
+  const pad=n=>String(n).padStart(2,'0');
+  return `朵朵红花-备份-${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}.json`;
+}
+
+// 判断当前是否在 iOS PWA 模式（iOS PWA 完全不支持下载 API）
+function isIOSPWA(){
+  const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent);
+  const isStandalone=window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
+  return isIOS&&isStandalone;
+}
+
+// 导出当前所有数据为 JSON 文件。
+// 兼容策略：showSaveFilePicker（可指定文件名）→ <a download> + blob（普通浏览器）→ iOS PWA 弹窗显示文本
+async function exportData(){
+  try{
+    const payload={
+      _app:'朵朵红花',
+      _version:'duoduo_honghua_v6',
+      _exportedAt:new Date().toISOString(),
+      data:D
+    };
+    const json=JSON.stringify(payload,null,2);
+    const blob=new Blob([json],{type:'application/json'});
+    const filename=backupFilename();
+
+    // 方案 1：File System Access API（Chrome/Edge 桌面 86+），可让用户选位置+保留文件名
+    if(window.showSaveFilePicker){
+      try{
+        const handle=await window.showSaveFilePicker({
+          suggestedName:filename,
+          types:[{description:'JSON 备份文件',accept:{'application/json':['.json']}}]
+        });
+        const w=await handle.createWritable();
+        await w.write(blob);
+        await w.close();
+        toast('备份文件已保存','ok');
+        return;
+      }catch(e){
+        if(e.name==='AbortError')return; // 用户取消
+        console.warn('showSaveFilePicker 失败，回退：',e);
+      }
+    }
+
+    // 方案 2：iOS PWA 完全不支持下载，弹窗显示文本让用户长按复制
+    if(isIOSPWA()){
+      showExportTextFallback(filename,json);
+      return;
+    }
+
+    // 方案 3：传统 <a download> + blob URL（普通浏览器和 Android）
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;
+    a.download=filename;
+    a.style.display='none';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(()=>URL.revokeObjectURL(url),2000);
+    toast('已下载，请在下载列表确认文件名','ok');
+  }catch(e){
+    console.error(e);
+    toast('导出失败：'+e.message,'err');
+  }
+}
+
+// iOS PWA 兜底：弹出 modal 显示 JSON 文本，用户可长按全选复制
+function showExportTextFallback(filename,json){
+  const wrap=document.getElementById('confirmWrap');
+  wrap.innerHTML=`<div class="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 px-4" onclick="if(event.target===this)this.remove()">
+    <div class="bg-white rounded-[24px] p-5 w-full max-w-md max-h-[80vh] flex flex-col" style="border:3px solid var(--primary-light)">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-xl" style="color:var(--primary)"><i class="fa-solid fa-file-export mr-1"></i>${filename}</h3>
+        <button onclick="this.closest('.fixed').remove()" class="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-gray-100"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <p class="text-xs mb-2" style="color:var(--muted)">iOS 不支持直接下载文件，请长按下方文字 → 复制。粘贴到「文件」App 或微信「文件传输助手」保存为 <code style="background:#f3f4f6;padding:1px 6px;border-radius:4px">${filename}</code></p>
+      <textarea readonly onclick="this.select()" class="flex-1 w-full p-3 rounded-xl text-xs font-mono border-2 mb-3" style="border-color:var(--border);min-height:200px;max-height:50vh">${esc(json)}</textarea>
+      <div class="flex gap-2">
+        <button onclick="copyExportText(this)" class="flex-1 py-3 rounded-xl text-white text-base" style="background:var(--primary)"><i class="fa-solid fa-copy mr-1"></i>一键复制</button>
+        <button onclick="this.closest('.fixed').remove()" class="px-5 py-3 rounded-xl text-base" style="background:var(--primary-light);color:var(--primary);border:2px solid var(--primary)">关闭</button>
+      </div>
+    </div></div>`;
+}
+
+async function copyExportText(btn){
+  const ta=btn.closest('.fixed').querySelector('textarea');
+  try{
+    await navigator.clipboard.writeText(ta.value);
+    toast('已复制到剪贴板','ok');
+  }catch(e){
+    // 兜底：手动选中
+    ta.select();
+    try{document.execCommand('copy');toast('已复制','ok')}
+    catch(_){toast('复制失败，请手动长按选择','err')}
+  }
+}
+
+// 校验备份文件结构是否完整
+function validateBackup(obj){
+  if(!obj||typeof obj!=='object')return'文件内容不是有效的 JSON';
+  if(obj._app!=='朵朵红花')return'不是朵朵红花的备份文件';
+  if(obj._version!=='duoduo_honghua_v6')return`备份版本不匹配（当前版本 ${STORE_KEY}，文件版本 ${obj._version||'未知'}）`;
+  const d=obj.data;
+  if(!d||typeof d!=='object')return'备份缺少数据内容';
+  if(!Array.isArray(d.members))return'备份缺少家庭成员数据';
+  if(!Array.isArray(d.records))return'备份缺少红花记录数据';
+  if(!Array.isArray(d.wishes))return'备份缺少心愿单数据';
+  return null;
+}
+
+// 读取用户选择的备份文件并展示预览，二次确认后写入
+function importData(input){
+  const file=input.files&&input.files[0];
+  input.value=''; // 重置以便能重复选同一个文件
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onerror=()=>toast('文件读取失败','err');
+  reader.onload=ev=>{
+    let parsed;
+    try{parsed=JSON.parse(ev.target.result)}
+    catch(e){toast('文件不是合法的 JSON：'+e.message,'err');return}
+    const err=validateBackup(parsed);
+    if(err){toast('备份无效：'+err,'err');return}
+    showImportPreview(parsed.data,file.name,Math.round(file.size/1024));
+  };
+  reader.readAsText(file);
+}
+
+// 显示备份预览（成员/记录/心愿统计 + 确认/取消按钮）
+function showImportPreview(data,fileName,sizeKB){
+  const wrap=document.getElementById('confirmWrap');
+  const memberNames=data.members.map(m=>m.name||'家人').join('、');
+  const dStr=new Date(data._exportedAt||Date.now()).toLocaleString('zh-CN');
+  wrap.innerHTML=`<div class="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 px-6" onclick="if(event.target===this)this.remove()">
+    <div class="bg-white rounded-[24px] p-6 w-full max-w-sm" style="border:3px solid var(--primary-light)">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-xl" style="color:var(--primary)"><i class="fa-solid fa-file-import mr-1"></i>备份预览</h3>
+        <button onclick="this.closest('.fixed').remove()" class="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-gray-100"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="rounded-2xl p-3 mb-3 text-sm space-y-1" style="background:var(--primary-light);color:var(--primary)">
+        <p class="font-bold">📄 ${fileName}（${sizeKB} KB）</p>
+        <p>📅 备份时间：${dStr}</p>
+      </div>
+      <div class="rounded-2xl p-3 mb-4 text-sm space-y-1.5" style="background:#F5F5F5">
+        <p>👨‍👩‍👧‍👦 家庭成员 <strong>${data.members.length}</strong> 位：${memberNames||'—'}</p>
+        <p>🌸 红花记录 <strong>${data.records.length}</strong> 条</p>
+        <p>⭐ 心愿单 <strong>${data.wishes.length}</strong> 条</p>
+        <p>🏷️ 快捷标签 <strong>${(data.tags||[]).length}</strong> 个</p>
+        <p>🏅 已解锁勋章 <strong>${Object.keys(data.unlockedMedals||{}).length}</strong> 枚</p>
+      </div>
+      <p class="text-sm mb-4" style="color:#E85D5D">⚠️ 导入会覆盖当前所有数据，请确认后再操作</p>
+      <div class="flex gap-3">
+        <button onclick="this.closest('.fixed').remove()" class="flex-1 py-3 rounded-xl text-base" style="background:var(--primary-light);color:var(--primary);border:2px solid var(--primary)">取消</button>
+        <button id="_impYes" class="flex-1 py-3 rounded-xl text-white text-base" style="background:var(--primary)">确认导入</button>
+      </div>
+    </div></div>`;
+  document.getElementById('_impYes').onclick=()=>{
+    wrap.innerHTML='';
+    doImport(data);
+  };
+}
+
+// 实际写入：复用 load() 的迁移逻辑后再 save()
+function doImport(data){
+  try{
+    D=migrateData(data);
+    // 重新执行一次迁移确保新版字段（如 unlockedMedals、tags）齐全
+    if(typeof D.need!=='number')D.need=20;
+    if(!D.tags||!D.tags.length)D.tags=buildTagsWithRoleDefaults(D.tags||[]);
+    if(!D.unlockedMedals||typeof D.unlockedMedals!=='object')D.unlockedMedals={};
+    if(!D.wishes)D.wishes=[];
+    if(!D.records)D.records=[];
+    curMember=D.members[0]?.id||1;
+    save();
+    renderAll();
+    closeM('mSet');
+    toast(`已导入 ${D.members.length} 位成员、${D.records.length} 条记录`,'ok');
+  }catch(e){
+    console.error(e);
+    toast('导入失败：'+e.message,'err');
+  }
 }
 
 // 添加新成员
