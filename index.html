@@ -1331,7 +1331,10 @@ function drawRedeemList(){
 
 function doRedeem(){const v=document.getElementById('redeemInput').value.trim();if(!v){toast('请输入礼物名称','err');return}redeem(curMember,v);closeM('mRedeem')}
 
-const MEMBER_COLORS=['#FF6B9D','#4FC3F7','#FFB347','#9C6ADE','#6BCB77','#FFD180','#FF6B6B','#5EEAD4','#10B981','#F472B6','#FBBF24'];
+// 主题色面板：前 11 个为常用鲜明色，后 10 个为马卡龙色系（低饱和、奶油质感）
+const MEMBER_COLORS=['#FF6B9D','#4FC3F7','#FFB347','#9C6ADE','#6BCB77','#FFD180','#FF6B6B','#5EEAD4','#10B981','#F472B6','#FBBF24',
+  // 马卡龙色系
+  '#FFB5A7','#A8E6CF','#D5AAFF','#FFB7C5','#FFF3B0','#FCD5CE','#C5E1A5','#FFE4B5','#B5C6E0','#E0BBE4'];
 
 function openSettings(){
   const el=document.getElementById('setBody');
@@ -1380,9 +1383,11 @@ function openSettings(){
             </div>
             <div>
               <label class="text-xs block mb-1" style="color:var(--muted)">主题色</label>
-              <div class="flex flex-wrap gap-1.5">${MEMBER_COLORS.map(c=>{
+              <div class="flex flex-wrap gap-1.5">${MEMBER_COLORS.map((c,ci)=>{
                 const on=(c||'').toLowerCase()===(k.color||'').toLowerCase();
-                return `<button onclick="D.members[${i}].color='${c}';save();renderAll();openSettings()" class="w-7 h-7 rounded-lg transition ${on?'ring-2 ring-offset-2':''}" style="background:${c};${on?'--tw-ring-color:'+c:''}" title="${c}"></button>`;
+                // 在马卡龙色组（第 11 个之后）前加一个细分隔
+                const sep = ci===11 ? '<span class="w-px h-5 bg-gray-200 mx-0.5"></span>' : '';
+                return sep + `<button onclick="D.members[${i}].color='${c}';save();renderAll();openSettings()" class="w-7 h-7 rounded-lg transition ${on?'ring-2 ring-offset-2':''}" style="background:${c};${on?'--tw-ring-color:'+c:''}" title="${c}"></button>`;
               }).join('')}</div>
             </div>
           </div>
