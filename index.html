@@ -628,6 +628,20 @@ function load(){
         // 补齐缺失的角色预设标签
         d.tags = buildTagsWithRoleDefaults(d.tags);
         if(!d.unlockedMedals)d.unlockedMedals={};
+        // 迁移：旧版 unlockedMedals 是全局平铺 {medalId: ts}，改为按成员隔离 {memberId: {medalId: ts}}
+        if(d.members&&d.members.length){
+          const memberIds=new Set(d.members.map(m=>m.id));
+          const keys=Object.keys(d.unlockedMedals);
+          if(keys.length&&!keys.some(k=>memberIds.has(Number(k)))){
+            const old=d.unlockedMedals;
+            d.unlockedMedals={};
+            d.members.forEach(m=>{d.unlockedMedals[m.id]={...old}});
+          }
+        }
+        // 确保每个成员在 unlockedMedals 里都有条目
+        if(d.members&&d.members.length){
+          d.members.forEach(m=>{if(!d.unlockedMedals[m.id])d.unlockedMedals[m.id]={}});
+        }
         const upgraded = migrateData(d);
         // 持久化：任何升级（包括颜色去重）的结果都回写，避免下次再修
         try{localStorage.setItem(STORE_KEY,JSON.stringify(upgraded))}catch(e){}
@@ -662,6 +676,14 @@ function load(){
   return defaults();
 }
 function save(){localStorage.setItem(STORE_KEY,JSON.stringify(D))}
+// 统计所有成员去重后的勋章总数（用于备份预览）
+function countAllMedals(mm){
+  const all=new Set();
+  Object.values(mm).forEach(v=>{
+    if(typeof v==='object'&&v!==null)Object.keys(v).forEach(k=>all.add(k));
+  });
+  return all.size;
+}
 
 // ==================== 生成小花SVG ====================
 function mkFlower(sz,color,on){
@@ -806,10 +828,12 @@ function checkMedals(memberId){
   const total=D.records.filter(r=>r.memberId===memberId&&r.type==='earn').length;
   const usedDims={};
   Object.keys(counts).forEach(k=>{if(counts[k]>0)usedDims[k]=true});
+  if(!D.unlockedMedals[memberId])D.unlockedMedals[memberId]={};
+  const memberMedals=D.unlockedMedals[memberId];
 
   const newly=[];
   MEDAL_DEFS.forEach(m=>{
-    if(D.unlockedMedals[m.id])return;
+    if(memberMedals[m.id])return;
     let progress=0;
     if(m.dim==='special'){
       if(m.id==='special_all')progress=Object.keys(usedDims).length;
@@ -820,7 +844,7 @@ function checkMedals(memberId){
       progress=counts[m.dim]||0;
     }
     if(progress>=m.need){
-      D.unlockedMedals[m.id]=Date.now();
+      memberMedals[m.id]=Date.now();
       newly.push(m);
     }
   });
@@ -1081,6 +1105,8 @@ function htmlMedals(){
   const usedDims={};
   Object.keys(counts).forEach(k=>{if(counts[k]>0)usedDims[k]=true});
 
+  const memberMedals=D.unlockedMedals[curMember]||{};
+
   // 当前勋章进度摘要
   let h='<div class="mb-4 p-4 rounded-2xl" style="background:linear-gradient(135deg,rgba(255,179,71,.1),rgba(255,107,157,.1));border:2px solid var(--secondary)">';
   h+='<p class="text-base font-bold mb-2" style="color:var(--secondary)"><i class="fa-solid fa-medal mr-1"></i>当前进度</p>';
@@ -1102,7 +1128,7 @@ function htmlMedals(){
     h+=`<span class="text-xs" style="color:var(--muted)">${dim.label}</span></div>`;
     h+='<div class="grid grid-cols-3 gap-2">';
     medals.forEach(m=>{
-      const unlocked=!!D.unlockedMedals[m.id];
+      const unlocked=!!memberMedals[m.id];
       const progress=dk==='persist'?streak:(counts[dk]||0);
       const pct=Math.min(1,progress/m.need);
       const bg=unlocked?'#FFD70010':'#f5f5f5';
@@ -1128,7 +1154,7 @@ function htmlMedals(){
   h+=`<div class="w-7 h-7 rounded-lg flex items-center justify-center" style="background:#FFD70020"><i class="fa-solid fa-crown text-sm" style="color:#FFD700"></i></div>`;
   h+=`<span class="text-base font-bold" style="color:#FFD700">特别勋章</span></div><div class="grid grid-cols-2 gap-2">`;
   specialMedals.forEach(m=>{
-    const unlocked=!!D.unlockedMedals[m.id];
+    const unlocked=!!memberMedals[m.id];
     let progress=0;
     if(m.id==='special_all')progress=Object.keys(usedDims).length;
     else if(m.id==='special_50')progress=total;
@@ -1149,7 +1175,7 @@ function htmlMedals(){
   });
   h+='</div></div>';
 
-  const unlockedCount=Object.keys(D.unlockedMedals).length;
+  const unlockedCount=Object.keys(memberMedals).length;
   h+=`<div class="text-center py-3"><p class="text-sm" style="color:var(--muted)">已解锁 ${unlockedCount} / ${MEDAL_DEFS.length} 枚勋章</p></div>`;
   return h;
 }
@@ -1627,7 +1653,7 @@ function showImportPreview(data,fileName,sizeKB){
         <p>🌸 红花记录 <strong>${data.records.length}</strong> 条</p>
         <p>⭐ 心愿单 <strong>${data.wishes.length}</strong> 条</p>
         <p>🏷️ 快捷标签 <strong>${(data.tags||[]).length}</strong> 个</p>
-        <p>🏅 已解锁勋章 <strong>${Object.keys(data.unlockedMedals||{}).length}</strong> 枚</p>
+        <p>🏅 已解锁勋章 <strong>${countAllMedals(data.unlockedMedals||{})}</strong> 枚</p>
       </div>
       <p class="text-sm mb-4" style="color:#E85D5D">⚠️ 导入会覆盖当前所有数据，请确认后再操作</p>
       <div class="flex gap-3">
@@ -1649,6 +1675,17 @@ function doImport(data){
     if(typeof D.need!=='number')D.need=20;
     if(!D.tags||!D.tags.length)D.tags=buildTagsWithRoleDefaults(D.tags||[]);
     if(!D.unlockedMedals||typeof D.unlockedMedals!=='object')D.unlockedMedals={};
+    // 迁移扁平格式为按成员隔离
+    if(D.members&&D.members.length){
+      const mids=new Set(D.members.map(m=>m.id));
+      const keys=Object.keys(D.unlockedMedals);
+      if(keys.length&&!keys.some(k=>mids.has(Number(k)))){
+        const old=D.unlockedMedals;
+        D.unlockedMedals={};
+        D.members.forEach(m=>{D.unlockedMedals[m.id]={...old}});
+      }
+      D.members.forEach(m=>{if(!D.unlockedMedals[m.id])D.unlockedMedals[m.id]={}});
+    }
     if(!D.wishes)D.wishes=[];
     if(!D.records)D.records=[];
     curMember=D.members[0]?.id||1;
@@ -1675,6 +1712,7 @@ function addMember(){
     if(!usedNames.has(cand)){defaultName=cand;break}
   }
   D.members.push({id:nid,name:defaultName,flowers:0,color,emoji,avatar:'',role:'other'});
+  D.unlockedMedals[nid]={};
   curMember=nid;
   save();renderAll();openSettings();
   toast('已添加新成员','ok');
@@ -1699,7 +1737,8 @@ function askRemoveMember(i){
     D.records=D.records.filter(r=>r.memberId!==m.id);
     D.wishes=D.wishes.filter(w=>w.memberId!==m.id);
     D.members.splice(i,1);
-    // 删除勋章记录里与该成员无关的部分（这里勋章是全局共享 key，可保留不动）
+    // 删除该成员的勋章记录
+    delete D.unlockedMedals[m.id];
     if(curMember===m.id){
       curMember=D.members[0]?.id;
     }
