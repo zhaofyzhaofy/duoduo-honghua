@@ -536,7 +536,8 @@ let selDim='self';
 let setSelDim='self';
 
 function defaults(){
-  return{need:20,members:buildDefaultMembers(),records:[],wishes:[],tags:buildTagsWithRoleDefaults([]),unlockedMedals:{}};
+  // 默认成员已包含爸爸/妈妈，直接标记为已完成角色补齐，避免用户删掉后又被自动加回
+  return{need:20,members:buildDefaultMembers(),records:[],wishes:[],tags:buildTagsWithRoleDefaults([]),unlockedMedals:{},_rolesSeeded:true};
 }
 
 // 自动迁移老数据 + 补齐爸爸、妈妈
@@ -586,20 +587,24 @@ function migrateData(d){
     if(!m.name) m.name = ROLES[m.role]?.name || '家人';
   });
 
-  // 补齐爸爸、妈妈角色（如果还没有的话）
-  const hasRole = (role) => d.members.some(m => m.role === role);
-  if(!hasRole('dad') || !hasRole('mom')){
-    const newId = d.members.reduce((max, m) => Math.max(max, m.id||0), 0) + 1;
-    if(!hasRole('dad')){
-      const dadColor = pickFreeColor(d.members, '#2563EB');
-      d.members.unshift({id:newId, name:'爸爸', flowers:0, color:dadColor, emoji:'👨', avatar:'', role:'dad'});
+  // 补齐爸爸、妈妈角色：只对老数据做一次性升级。
+  // 升级完成后写入 _rolesSeeded 标记，之后用户手动删除的成员不会再被自动加回来。
+  if(!d._rolesSeeded){
+    const hasRole = (role) => d.members.some(m => m.role === role);
+    if(!hasRole('dad') || !hasRole('mom')){
+      const newId = d.members.reduce((max, m) => Math.max(max, m.id||0), 0) + 1;
+      if(!hasRole('dad')){
+        const dadColor = pickFreeColor(d.members, '#2563EB');
+        d.members.unshift({id:newId, name:'爸爸', flowers:0, color:dadColor, emoji:'👨', avatar:'', role:'dad'});
+      }
+      if(!hasRole('mom')){
+        const dadIdx = d.members.findIndex(m => m.role==='dad');
+        const insertAt = dadIdx >= 0 ? dadIdx + 1 : d.members.length;
+        const momColor = pickFreeColor(d.members, '#EC4899');
+        d.members.splice(insertAt, 0, {id:newId+1, name:'妈妈', flowers:0, color:momColor, emoji:'👩', avatar:'', role:'mom'});
+      }
     }
-    if(!hasRole('mom')){
-      const dadIdx = d.members.findIndex(m => m.role==='dad');
-      const insertAt = dadIdx >= 0 ? dadIdx + 1 : d.members.length;
-      const momColor = pickFreeColor(d.members, '#EC4899');
-      d.members.splice(insertAt, 0, {id:newId+1, name:'妈妈', flowers:0, color:momColor, emoji:'👩', avatar:'', role:'mom'});
-    }
+    d._rolesSeeded = true;
   }
   // 颜色去重：保留第一次出现的色，重复色替换为调色板中未占用的色
   // 解决 v6 早期版本里 dad=#4FC3F7 与某些小宝色撞车的情况

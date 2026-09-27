@@ -4,7 +4,7 @@
 // 格式：YYYY.MM.DD-序号，例如 '2026.06.05-1'
 // 修改后 activate 事件会自动清理旧缓存，新内容立即生效。
 // ============================================================
-const BUILD_VERSION = '2026.06.30-10';
+const BUILD_VERSION = '2026.09.27-1';
 const CACHE = `duoduo-${BUILD_VERSION}`;
 
 const PRECACHE_URLS = ['./', './index.html'];
